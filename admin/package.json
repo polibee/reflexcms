@@ -1,0 +1,42 @@
+{
+  "name": "nuxtadmin",
+  "private": true,
+  "type": "module",
+  "description": "Declarative admin application framework for Nuxt 4 + Vue 3.5",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest run",
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@ckeditor/ckeditor5-vue": "^8.2.0",
+    "@pinia/nuxt": "^0.11.2",
+    "@tanstack/vue-table": "^8.21.3",
+    "@vee-validate/zod": "^4.15.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.539.0",
+    "nuxt": "^4.5.0",
+    "pinia": "^3.0.3",
+    "reka-ui": "^2.4.1",
+    "tailwind-merge": "^3.3.1",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.18",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.9.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "eslint": "^9.33.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.0.5"
+  }
+}

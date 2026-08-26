@@ -1,0 +1,28 @@
+# dependencies / build artifacts
+node_modules/
+.output/
+.nuxt/
+dist/
+
+# local env & secrets
+.env
+.env.*
+!.env.example
+
+# reference clone kept for history only; the live fork is admin/
+docs/nuxtadmin/
+
+# OS noise
+.DS_Store
+.idea
+.vscode
+tmp/
+*.log
+
+# local runtime / test artifacts
+.playwright-mcp/
+backups/
+.mimosa/
+.pscale/
+*.tmp
+*.sql.bak
