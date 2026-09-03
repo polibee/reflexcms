@@ -19,7 +19,7 @@ const { get } = usePublicApi()
 // widgets — categories/tags clouds don't belong there.
 const sidebarArea = computed(() => {
   const p = route.path
-  if (p.startsWith('/users') || p.startsWith('/notifications') || p.startsWith('/messages') || p.startsWith('/settings')) {
+  if (p.startsWith('/users') || p.startsWith('/notifications') || p.startsWith('/messages') || p.startsWith('/settings') || p.startsWith('/shop')) {
     return ''
   }
   return p.startsWith('/forums') || p.startsWith('/topics') ? 'forum_sidebar' : 'blog_sidebar'

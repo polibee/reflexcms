@@ -21,6 +21,7 @@ import (
 	notificationmodule "reflexcms/backend/modules/notification"
 	notificationservices "reflexcms/backend/modules/notification/services"
 	pagesmodule "reflexcms/backend/modules/pages"
+	paymodule "reflexcms/backend/modules/pay"
 	settingsmodule "reflexcms/backend/modules/settings"
 	"reflexcms/backend/kernel"
 )
@@ -34,7 +35,7 @@ func Full() []kernel.Module {
 		cmsmodule.New(), commentmodule.New(),
 		forummodule.New(),
 		settingsmodule.New(), notificationmodule.New(), auditmodule.New(),
-		layoutmodule.New(), pagesmodule.New(),
+		layoutmodule.New(), pagesmodule.New(), paymodule.New(),
 		aiWiring{}, notifyWiring{},
 	)
 	return mods
@@ -46,7 +47,7 @@ func Blog() []kernel.Module {
 	mods = append(mods,
 		cmsmodule.New(), commentmodule.New(),
 		settingsmodule.New(), notificationmodule.New(), auditmodule.New(),
-		layoutmodule.New(), pagesmodule.New(),
+		layoutmodule.New(), pagesmodule.New(), paymodule.New(),
 		aiWiring{}, notifyWiring{},
 	)
 	return mods
@@ -58,7 +59,7 @@ func Forum() []kernel.Module {
 	mods = append(mods,
 		forummodule.New(),
 		settingsmodule.New(), notificationmodule.New(), auditmodule.New(),
-		layoutmodule.New(), pagesmodule.New(),
+		layoutmodule.New(), pagesmodule.New(), paymodule.New(),
 		notifyWiring{},
 	)
 	return mods

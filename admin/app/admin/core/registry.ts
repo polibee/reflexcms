@@ -19,6 +19,8 @@ interface RegistryState {
   widgets: Map<string, WidgetDef>
   modules: Map<string, ModuleDef>
   navGroups: Map<string, number>
+  // module-declared page links that don't map to a resource (e.g. 邮件群发)
+  navItems: Map<string, NavItem[]>
 }
 
 const state: RegistryState = {
@@ -32,7 +34,8 @@ const state: RegistryState = {
   resources: new Map(),
   widgets: new Map(),
   modules: new Map(),
-  navGroups: new Map()
+  navGroups: new Map(),
+  navItems: new Map()
 }
 
 export function setPanel(panel: Partial<PanelConfig>): void {
@@ -59,6 +62,12 @@ export function registerModule(module: ModuleDef): void {
   state.modules.set(module.name, module)
   for (const g of module.navGroups ?? []) {
     if (g.sort !== undefined) state.navGroups.set(g.label, g.sort)
+    // merge module-declared page links into the group's nav
+    for (const item of g.items ?? []) {
+      const existing = state.navItems.get(g.label) ?? []
+      if (!existing.some(e => e.to === item.to)) existing.push(item)
+      state.navItems.set(g.label, existing)
+    }
   }
   for (const r of module.resources ?? []) registerResource(r)
   for (const w of module.widgets ?? []) registerWidget(w)
@@ -106,6 +115,11 @@ export function getNavGroups(): NavGroup[] {
       icon: resource.icon,
       permission: `${resolve(resource).permissionPrefix}.view`
     })
+  }
+  // module-declared page links join their groups after resources
+  for (const [label, items] of state.navItems) {
+    if (!groups.has(label)) groups.set(label, [])
+    groups.get(label)!.push(...items)
   }
   return [...groups.entries()]
     .map(([label, items]) => ({

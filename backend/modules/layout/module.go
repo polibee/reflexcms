@@ -1,6 +1,7 @@
 package layout
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"strings"
 
@@ -136,6 +137,33 @@ func registerAdminSpecs() {
 		Searchable: []string{"title"},
 		Sortable:   []string{"id", "sort", "created_at"},
 		Fillable:   []string{"title", "image_url", "link_url", "sort", "is_active"},
+	})
+
+	// Invite codes: previously generated only via code paths; the spec makes
+	// them fully manageable (create/copy/revoke) from the admin panel.
+	adminhub.Register(&adminhub.Spec{
+		Name:       "invites",
+		Model:      layoutmodels.InviteCode{},
+		Searchable: []string{"code"},
+		Sortable:   []string{"id", "code", "max_uses", "used_count", "expires_at", "created_at"},
+		Fillable:   []string{"code", "max_uses", "expires_at"},
+		BeforeSave: func(data map[string]any) error {
+			code, _ := data["code"].(string)
+			if strings.TrimSpace(code) != "" {
+				return nil
+			}
+			// Auto-generate an unambiguous code when none provided.
+			const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+			buf := make([]byte, 10)
+			if _, err := rand.Read(buf); err != nil {
+				return err
+			}
+			for i := range buf {
+				buf[i] = alphabet[int(buf[i])%len(alphabet)]
+			}
+			data["code"] = "INV-" + string(buf)
+			return nil
+		},
 	})
 }
 

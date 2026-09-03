@@ -239,5 +239,5 @@ export interface ModuleDef {
   name: string
   resources?: AdminResource[]
   widgets?: WidgetDef[]
-  navGroups?: Array<{ label: string, sort?: number }>
+  navGroups?: Array<{ label: string, sort?: number, items?: NavItem[] }>
 }

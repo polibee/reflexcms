@@ -14,6 +14,7 @@ import settingsModule from '~/modules/settings/module'
 import operationLogsModule from '~/modules/operation-logs/module'
 import layoutModule from '~/modules/layout/module'
 import pagesModule from '~/modules/pages/module'
+import payModule from '~/modules/pay/module'
 
 /**
  * Application composition root.
@@ -37,6 +38,7 @@ export default defineNuxtPlugin(() => {
     repliesModule,
     layoutModule,
     pagesModule,
+    payModule,
     usersModule,
     rolesModule,
     notificationsModule,

@@ -12,6 +12,11 @@ dist/
 # reference clone kept for history only; the live fork is admin/
 docs/nuxtadmin/
 
+# third-party payment SDK reference copies (live implementations are ours)
+docs/hpj-demo/
+docs/xunhupay-master/
+docs/coinpayments-sdk-python-1.0.0/
+
 # OS noise
 .DS_Store
 .idea

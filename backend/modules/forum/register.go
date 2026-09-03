@@ -22,7 +22,19 @@ func Register() {
 	adminhub.Register(forumCategorySpec())
 	adminhub.Register(topicSpec())
 	adminhub.Register(replySpec())
+	adminhub.Register(boardModeratorSpec())
 	registerRoutes()
+}
+
+// boardModeratorSpec exposes per-board moderator assignment to the admin.
+func boardModeratorSpec() *adminhub.Spec {
+	return &adminhub.Spec{
+		Name:             "board_moderators",
+		Model:            forummodels.BoardModerator{},
+		Sortable:         []string{"id", "board_id", "user_id", "created_at"},
+		Fillable:         []string{"board_id", "user_id"},
+		PermissionPrefix: "board_moderators",
+	}
 }
 
 func forumCategorySpec() *adminhub.Spec {
@@ -94,6 +106,7 @@ func registerRoutes() {
 	r.Get("/api/v1/topics", publicAPI.ListTopics)
 	r.Post("/api/v1/topics", publicAPI.StoreTopic)
 	r.Get("/api/v1/topics/{id}", publicAPI.ShowTopic)
+	r.Post("/api/v1/topics/{id}/moderate", publicAPI.ModerateTopic)
 	r.Get("/api/v1/topics/{id}/replies", publicAPI.TopicReplies)
 	r.Get("/api/v1/replies/latest", publicAPI.LatestReplies)
 	r.Post("/api/v1/topics/{id}/replies", publicAPI.StoreReply)

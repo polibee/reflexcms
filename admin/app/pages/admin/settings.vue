@@ -99,6 +99,35 @@ const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = 
     ]
   },
   {
+    group: 'pay', title: '支付与商城',
+    fields: [
+      { key: 'pay.shop_enabled', label: '启用商城', type: 'switch', helpText: '开启后前台显示商城模块与导航入口' },
+      { key: 'pay.display_currency', label: '计价货币', type: 'text', helpText: 'ISO 代码，如 USD / CNY' },
+      { key: 'pay.xcash_enabled', label: 'Xcash 渠道', type: 'switch' },
+      { key: 'pay.xcash_appid', label: 'Xcash AppID', type: 'text' },
+      { key: 'pay.xcash_hmac_key', label: 'Xcash HMAC Key', type: 'text' },
+      { key: 'pay.xcash_api', label: 'Xcash API 地址', type: 'text', helpText: '默认 https://pay.xca.sh' },
+      { key: 'pay.aff_xcash', label: 'Xcash 注册推广链接', type: 'text' },
+      { key: 'pay.coinpayments_enabled', label: 'CoinPayments 渠道', type: 'switch' },
+      { key: 'pay.coinpayments_client_id', label: 'CoinPayments Client ID', type: 'text' },
+      { key: 'pay.coinpayments_client_secret', label: 'CoinPayments Client Secret', type: 'text' },
+      { key: 'pay.aff_coinpayments', label: 'CoinPayments 注册推广链接', type: 'text' },
+      { key: 'pay.xunhu_enabled', label: '虎皮椒渠道', type: 'switch', helpText: '该渠道签名协议与安全策略冲突，暂不可用' },
+      { key: 'pay.aff_xunhupay', label: '虎皮椒注册推广链接', type: 'text' },
+      { key: 'pay.codepay_enabled', label: '码支付渠道', type: 'switch', helpText: '该渠道签名协议与安全策略冲突，暂不可用' },
+      { key: 'pay.aff_codepay', label: '码支付注册推广链接', type: 'text' },
+      { key: 'pay.paypal_enabled', label: 'PayPal 渠道', type: 'switch' },
+      { key: 'pay.paypal_client_id', label: 'PayPal Client ID', type: 'text' },
+      { key: 'pay.paypal_secret', label: 'PayPal Secret', type: 'text' },
+      { key: 'pay.paypal_env', label: 'PayPal 环境', type: 'select', options: [
+        { label: 'Sandbox（测试）', value: 'sandbox' },
+        { label: 'Live（生产）', value: 'live' }
+      ] },
+      { key: 'pay.paypal_webhook_id', label: 'PayPal Webhook ID', type: 'text' },
+      { key: 'pay.aff_paypal', label: 'PayPal 注册推广链接', type: 'text' }
+    ]
+  },
+  {
     group: 'privacy', title: '隐私与 Cookie',
     fields: [
       { key: 'privacy.cookie_banner', label: 'Cookie 同意横幅', type: 'switch' },

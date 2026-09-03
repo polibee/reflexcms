@@ -90,6 +90,26 @@ const configs: Record<string, ResourceConfig> = {
     label: 'Page',
     searchable: ['title', 'slug'],
     permissionPrefix: 'pages'
+  },
+  products: {
+    label: 'Product',
+    searchable: ['title'],
+    permissionPrefix: 'products'
+  },
+  orders: {
+    label: 'Order',
+    searchable: ['order_no', 'title'],
+    permissionPrefix: 'orders'
+  },
+  invites: {
+    label: 'Invite',
+    searchable: ['code'],
+    permissionPrefix: 'invites'
+  },
+  board_moderators: {
+    label: 'Board Moderator',
+    searchable: [],
+    permissionPrefix: 'board_moderators'
   }
 }
 

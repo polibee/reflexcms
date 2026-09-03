@@ -19,6 +19,7 @@ export function useSiteConfig() {
     const items: SiteSection[] = [{ label: '首页', to: '/' }]
     if (sections.includes('articles')) items.push({ label: '文章', to: '/articles' })
     if (sections.includes('topics')) items.push({ label: '论坛', to: '/forums' })
+    if (sections.includes('shop')) items.push({ label: '商城', to: '/shop' })
     return items
   })
   return { config, siteName, navItems }

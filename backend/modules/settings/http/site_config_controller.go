@@ -37,10 +37,19 @@ func (r *SiteConfigController) Show(ctx http.Context) http.Response {
 func sectionsFor(mode string) []string {
 	switch mode {
 	case settingsservices.ModeBlog:
-		return []string{"articles", "comments"}
+		return withShop([]string{"articles", "comments"})
 	case settingsservices.ModeForum:
-		return []string{"forums", "topics", "replies"}
+		return withShop([]string{"forums", "topics", "replies"})
 	default:
-		return []string{"articles", "comments", "forums", "topics", "replies"}
+		return withShop([]string{"articles", "comments", "forums", "topics", "replies"})
 	}
+}
+
+// withShop appends the shop section when the store is enabled.
+func withShop(sections []string) []string {
+	v := settingsservices.Get("pay.shop_enabled")
+	if v == "true" || v == "1" {
+		return append(sections, "shop")
+	}
+	return sections
 }

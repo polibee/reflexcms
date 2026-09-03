@@ -34,6 +34,14 @@ func PagesMigrations() []schema.Migration {
 	}
 }
 
+// PayMigrations: products + orders (商城).
+func PayMigrations() []schema.Migration {
+	return []schema.Migration{
+		&M20260826000006CreateProductsTable{},
+		&M20260826000007CreateOrdersTable{},
+	}
+}
+
 // AuthMigrations: admin session storage.
 func AuthMigrations() []schema.Migration {
 	return []schema.Migration{
@@ -59,6 +67,7 @@ func ForumMigrations() []schema.Migration {
 		&M20260825000003CreateRepliesTable{},
 		&M20260825000004CreateLikesTable{},
 		&M20260825000010EnhanceForum{},
+		&M20260826000008CreateBoardModeratorsTable{},
 	}
 }
 
