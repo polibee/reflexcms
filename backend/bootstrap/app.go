@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/goravel/framework/contracts/console"
 	"github.com/goravel/framework/contracts/database/schema"
 	databaseseeder "github.com/goravel/framework/contracts/database/seeder"
 	"github.com/goravel/framework/contracts/event"
@@ -8,6 +9,7 @@ import (
 	"github.com/goravel/framework/contracts/schedule"
 	"github.com/goravel/framework/foundation"
 
+	"reflexcms/backend/app/console/commands"
 	"reflexcms/backend/config"
 	"reflexcms/backend/database/migrations"
 	"reflexcms/backend/kernel"
@@ -69,6 +71,11 @@ func Boot(mods ...kernel.Module) contractsfoundation.Application {
 			// Framework providers first (route, orm, cache…), then the
 			// composition driver that Boots every module.
 			return append(Providers(), NewModuleProviders(mods))
+		}).
+		WithCommands(func() []console.Command {
+			return []console.Command{
+				&commands.AdminBootstrap{},
+			}
 		}).
 		WithConfig(config.Boot).
 		Create()

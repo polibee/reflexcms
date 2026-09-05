@@ -43,6 +43,10 @@ if [ "$GO_OK" = "1" ]; then
   (cd backend && go build -o tmp/main.exe .)
   (cd backend && ./tmp/main.exe artisan migrate) || true
   (cd backend && ./tmp/main.exe artisan db:seed) || true
+  # Super-admin bring-up: on a fresh install this generates a strong random
+  # password and prints it exactly once. Existing super-admins are untouched.
+  echo "→ 配置超级管理员账号..."
+  (cd backend && ./tmp/main.exe artisan admin:bootstrap) || true
   echo "✓ 后端构建完成（生产建议: go build -o reflexcms-api 且用 systemd/容器托管）"
 else
   echo "! 本机无 Go，跳过本地构建——请使用 Dockerfile 构建镜像"

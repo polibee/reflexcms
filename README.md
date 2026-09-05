@@ -53,7 +53,9 @@ cd reflexcms
 ./deploy/deploy.sh
 ```
 
-脚本自动完成：环境检查 → Docker 启动 PostgreSQL 17 + Redis 7 → 数据库迁移与种子 → 后端构建 → 前端构建。完成后访问 `http://localhost:3000`（默认管理员 `admin@reflexcms.dev` / `ReflexCMS@2026`）。
+脚本自动完成：环境检查 → Docker 启动 PostgreSQL 17 + Redis 7 → 数据库迁移与种子 → 超级管理员账号引导 → 后端构建 → 前端构建。完成后访问 `http://localhost:3000`。
+
+> **生产环境管理员账号**：部署脚本会在全新安装时运行 `artisan admin:bootstrap`，自动生成强随机密码并**只打印一次**，请立即保存。也可手动执行（在 `backend/` 目录）`go run . artisan admin:bootstrap --email=you@example.com`（省略 `--password` 则自动生成）。空站点上首次注册的账号同样会被授予超级管理员。管理员可在后台「个人设置」中随时修改密码。开发环境默认账号仍为 `admin@reflexcms.dev` / `ReflexCMS@2026`，上线前务必重置。
 
 手动部署与生产环境配置见 [`docs/运维部署手册.md`](docs/运维部署手册.md)。
 
@@ -105,9 +107,7 @@ cd reflexcms
 <a id="vast-ai"></a>
 ## ☁️ 需要 GPU 算力？
 
-[![Vast.ai](docs/images/vast-logo.svg)](https://cloud.vast.ai/?ref_id=91181)
-
-**[Vast.ai — 高性价比 GPU 云租用](https://cloud.vast.ai/?ref_id=91181)**：如果你需要为 AI 摘要、内容审核等模块准备 GPU 算力，推荐试试 [Vast.ai](https://cloud.vast.ai/?ref_id=91181)——按时计费、海量社区 GPU、价格仅为主流云的零头。
+**[Vast — 高性价比 GPU 云租用](https://cloud.vast.ai/?ref_id=91181)**：如果你需要为 AI 摘要、内容审核等模块准备 GPU 算力，推荐试试 [Vast](https://cloud.vast.ai/?ref_id=91181)——按时计费、海量社区 GPU、价格仅为主流云的零头。
 
 - **全球最大 GPU 共享市场**：20,000+ 可租 GPU、40+ 数据中心，覆盖 RTX 4090 / A100 / H100 等主流卡型
 - **按秒计费，随用随停**：价格由供需实时决定，通常只有传统云厂商的几分之一；充几美元就能开跑

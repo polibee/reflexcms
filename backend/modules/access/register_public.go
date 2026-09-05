@@ -10,6 +10,7 @@ import (
 	"reflexcms/backend/app/facades"
 	httpx "reflexcms/backend/app/support/httpx"
 	authservices "reflexcms/backend/modules/auth/services"
+	accessmodels "reflexcms/backend/modules/access/models"
 	settingsservices "reflexcms/backend/modules/settings/services"
 )
 
@@ -76,20 +77,23 @@ func RegisterPublic(ctx http.Context) http.Response {
 		return httpx.Error(ctx, 500, err.Error())
 	}
 
-	if _, err := facades.Orm().Query().Exec(`
-		INSERT INTO users (username, email, password, status, created_at, updated_at)
-		VALUES (?, ?, ?, 'active', NOW(), NOW())
-	`, req.Username, req.Email, hashed); err != nil {
+	newUser := accessmodels.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Password: hashed,
+		Status:   "active",
+	}
+	// Production bring-up path: on an empty site the very first registered
+	// account becomes the super-admin, so a fresh deployment never ships
+	// seeded credentials. Later sign-ups keep the default member role.
+	userCount, countErr := facades.Orm().Query().Table("users").Count()
+	if countErr == nil && userCount == 0 {
+		newUser.RoleID = firstUserSuperAdminRoleID()
+	}
+	if err := facades.Orm().Query().Create(&newUser); err != nil {
 		return httpx.Error(ctx, 500, err.Error())
 	}
-
-	var ids []int64
-	if err := facades.Orm().Query().Table("users").
-		Where("email = ?", req.Email).OrderBy("id", "desc").Limit(1).
-		Pluck("id", &ids); err != nil || len(ids) == 0 {
-		return httpx.Error(ctx, 500, "registration succeeded but user lookup failed")
-	}
-	newUserID := uint64(ids[0])
+	newUserID := newUser.ID
 
 	// Consume invite code (max_uses / used_count / expires_at enforced).
 	// On failure the fresh account is removed so the code isn't wasted.
@@ -120,6 +124,26 @@ func regEnabled() bool {
 func regInviteRequired() bool {
 	v := settingsservices.Get("reg.invite_required")
 	return v == "true" || v == "1"
+}
+
+// firstUserSuperAdminRoleID returns the super-admin role id, creating the
+// role when the deployment skipped db:seed. Returns 0 (default member)
+// when even that fails so registration never breaks.
+func firstUserSuperAdminRoleID() uint64 {
+	var role accessmodels.Role
+	if err := facades.Orm().Query().Where("name = ?", "super-admin").FirstOrFail(&role); err == nil {
+		return role.ID
+	}
+	role = accessmodels.Role{
+		Name:        "super-admin",
+		DisplayName: "超级管理员",
+		Permissions: accessmodels.StringList{"*"},
+		Sort:        10,
+	}
+	if err := facades.Orm().Query().Create(&role); err != nil {
+		return 0
+	}
+	return role.ID
 }
 
 // consumeInvite validates and increments an invite code.
