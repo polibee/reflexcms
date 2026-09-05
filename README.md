@@ -2,6 +2,8 @@
 
 > 基于 **Goravel v1.18（Go）** 与 **Nuxt 4 / Vue 3** 构建的一体化内容与社区平台。支持 `CMS 文章`、`论坛社区`、`混合模式` 三种运行形态，内置**积分等级、签到、@提及、私信、拉黑、商城支付、静态页面管理**等完整社区能力。
 
+> 🤖 **本项目由智谱 GLM 5.3 FLASH 完全开发**——从后端架构、前端界面到部署脚本，全部由 AI 编码完成，人类仅负责提出需求与验收。
+
 [English](README.en.md) | 中文
 
 ## 📷 界面预览
@@ -137,6 +139,19 @@ BACKEND_URL=http://127.0.0.1:9000 node .output/server/index.mjs
 - [`docs/运维部署手册.md`](docs/运维部署手册.md) — 部署运维
 
 ---
+
+<a id="bigmodel"></a>
+## 🤖 本项目如何被开发 & 智谱 BigModel 推广
+
+**本项目由 GLM 5.3 FLASH 完全开发**——后端架构、前端界面、支付网关、部署脚本与文档，全部由 [智谱大模型开放平台 BigModel.cn](https://www.bigmodel.cn/) 的 GLM 5.3 FLASH 模型编码完成，人类仅负责提出需求与验收。
+
+**我正在智谱大模型开放平台 BigModel.cn 上打造 AI 应用**，智谱新一代旗舰模型 **GLM-5.3** 已上线，在**推理、代码、智能体**综合能力达到开源模型 SOTA 水平。通过我的邀请链接注册即可获得 **2000 万 Tokens 大礼包**，期待和你一起在 BigModel 上畅享卓越模型能力：
+
+**[👉 邀请链接：https://www.bigmodel.cn/invite?icode=LHOTDtGgt9PRlQPrnhcrXnHEaazDlIZGj9HxftzTbt4%3D](https://www.bigmodel.cn/invite?icode=LHOTDtGgt9PRlQPrnhcrXnHEaazDlIZGj9HxftzTbt4%3D)**
+
+- 🧠 **GLM-5.3 旗舰模型**：推理 / 代码 / 智能体综合能力开源 SOTA
+- 🎁 **邀请注册礼**：通过上方链接注册立得 2000 万 Tokens
+- 🛠 **全链路 AI 开发实证**：本仓库 60+ 提交即为 GLM 5.3 FLASH 的交付成果
 
 <a id="vast-ai"></a>
 ## ☁️ 需要 GPU 算力？

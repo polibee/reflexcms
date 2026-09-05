@@ -2,6 +2,8 @@
 
 > An all-in-one content and community platform built with **Goravel v1.18 (Go)** and **Nuxt 4 / Vue 3**. Runs as `CMS`, `Forum`, or `Hybrid`, with a full community toolkit: **points & levels, daily check-ins, @mentions, direct messages, blocking, shop with payment gateways, and a static page manager**.
 
+> 🤖 **This project was built entirely by Zhipu's GLM 5.3 FLASH** — backend architecture, frontend UI, and deployment scripts were all AI-coded; the human only supplied requirements and acceptance.
+
 [中文](README.md) | English
 
 ## 📷 Screenshots
@@ -130,6 +132,19 @@ For manual / production deployment, see the **Manual Deployment** section above 
 **Planned**: Meilisearch integration, OAuth login, theme layer separation.
 
 ---
+
+<a id="bigmodel"></a>
+## 🤖 How This Project Was Built & BigModel Promo
+
+**This project was built entirely by GLM 5.3 FLASH** — backend architecture, frontend UI, payment gateways, deployment scripts, and docs were all coded by the GLM 5.3 FLASH model on [Zhipu's BigModel.cn open platform](https://www.bigmodel.cn/); the human only supplied requirements and acceptance.
+
+**I'm building AI applications on BigModel.cn (Zhipu AI's open platform).** Their new flagship model **GLM-5.3** is now live, reaching open-source SOTA in **reasoning, coding, and agentic** capabilities. Sign up through my invite link to get a **20-million Tokens welcome pack**:
+
+**[👉 Invite link: https://www.bigmodel.cn/invite?icode=LHOTDtGgt9PRlQPrnhcrXnHEaazDlIZGj9HxftzTbt4%3D](https://www.bigmodel.cn/invite?icode=LHOTDtGgt9PRlQPrnhcrXnHEaazDlIZGj9HxftzTbt4%3D)**
+
+- 🧠 **GLM-5.3 flagship**: open-source SOTA in reasoning / coding / agents
+- 🎁 **Invite bonus**: 20M Tokens for sign-ups via the link above
+- 🛠 **Proof of full-lifecycle AI development**: the 60+ commits in this repo are GLM 5.3 FLASH's deliverables
 
 <a id="vast-ai"></a>
 ## ☁️ Need GPU Compute?

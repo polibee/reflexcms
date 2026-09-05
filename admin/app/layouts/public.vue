@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { config, siteName, navItems } = useSiteConfig()
+const { toast, confirmDialog } = useFrontUi()
 
 interface SidebarWidget {
   type: string
@@ -94,9 +95,17 @@ async function doSignin() {
 }
 
 async function doLogout() {
+  const ok = await confirmDialog({
+    title: '退出登录',
+    message: '确定要退出当前账号吗？',
+    confirmLabel: '退出',
+    danger: true
+  })
+  if (!ok) return
   try {
     await $fetch('/api/auth/logout', { method: 'POST' })
   } catch { /* silent */ }
+  toast('已退出登录', 'info')
   await navigateTo('/')
   window.location.reload()
 }
@@ -492,5 +501,6 @@ function navAllowed(url: string): boolean {
       <span v-if="config?.seo?.icp">{{ config.seo.icp }} · </span>
       {{ siteName }}
     </footer>
+    <FrontToastHost />
   </div>
 </template>

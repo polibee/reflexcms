@@ -175,9 +175,17 @@ function avatarColor(userId: number) {
 
 /* block a user from the reply card; their replies vanish after reload */
 const blockBusyId = ref(0)
+const { toast, confirmDialog } = useFrontUi()
 
 async function blockUser(userId: number) {
   if (!me.value || blockBusyId.value) return
+  const ok = await confirmDialog({
+    title: '拉黑该用户？',
+    message: '拉黑后将不再看到对方发表的回复，可随时在个人设置中解除。',
+    confirmLabel: '拉黑',
+    danger: true
+  })
+  if (!ok) return
   blockBusyId.value = userId
   try {
     await rawFetch('/api/v1/me/blocked/toggle', {
@@ -186,7 +194,10 @@ async function blockUser(userId: number) {
     })
     // refetch current reply page — blocked author's replies are filtered server-side
     await goToReplyPage(replyPage.value)
-  } catch { /* silent */ } finally {
+    toast('已更新屏蔽状态')
+  } catch {
+    toast('操作失败，请稍后再试', 'error')
+  } finally {
     blockBusyId.value = 0
   }
 }
@@ -209,15 +220,10 @@ async function moderate(action: string, replyId?: number) {
     replyTotal.value = fresh.reply_count
   } catch (e: unknown) {
     const err = e as { data?: { statusMessage?: string } }
-    notifyFront(err.data?.statusMessage ?? '操作失败')
+    toast(err.data?.statusMessage ?? '操作失败', 'error')
   } finally {
     modBusy.value = false
   }
-}
-
-function notifyFront(msg: string) {
-  // lightweight toast for moderator feedback
-  window.alert(msg)
 }
 
 /* mute / ban from the reply card (moderators mute; admins can also ban) */
@@ -244,7 +250,7 @@ async function muteUser(userId: number, hours: number) {
       method: 'POST',
       body: { duration_hours: hours }
     }) as { message?: string }
-    notifyFront(res.message ?? '已禁言')
+    toast(res.message ?? '已禁言')
   } catch (e: unknown) {
     const err = e as { data?: { statusMessage?: string } }
     notifyFront(err.data?.statusMessage ?? '操作失败')
@@ -255,16 +261,23 @@ async function muteUser(userId: number, hours: number) {
 
 async function banUser(userId: number, days: number) {
   if (muteBusyId.value) return
+  const ok = await confirmDialog({
+    title: '封禁该账号？',
+    message: days >= 3650 ? '封禁后该用户将无法再登录本站。' : `该用户将被禁止登录 ${days} 天。`,
+    confirmLabel: '封禁',
+    danger: true
+  })
+  if (!ok) return
   muteBusyId.value = userId
   try {
     const res = await rawFetch(`/api/v1/users/${userId}/ban`, {
       method: 'POST',
       body: { days }
     }) as { message?: string }
-    notifyFront(res.message ?? '已封禁')
+    toast(res.message ?? '已封禁')
   } catch (e: unknown) {
     const err = e as { data?: { statusMessage?: string } }
-    notifyFront(err.data?.statusMessage ?? '操作失败')
+    toast(err.data?.statusMessage ?? '操作失败', 'error')
   } finally {
     muteBusyId.value = 0
   }
@@ -454,21 +467,36 @@ async function banUser(userId: number, days: number) {
         <!-- mute duration menu -->
         <div
           v-if="muteMenuId"
-          class="fixed inset-0 z-50"
+          class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
           @click="muteMenuId = 0"
         >
           <div
-            class="absolute left-1/2 top-1/2 w-56 -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-white p-2 shadow-lg"
+            class="absolute left-1/2 top-1/2 w-60 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-100 bg-white p-3 shadow-2xl"
             @click.stop
           >
-            <p class="px-2 py-1 text-xs font-semibold text-gray-500">
+            <p class="mb-2 flex items-center gap-2 px-1 text-sm font-semibold text-gray-900">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                class="h-4 w-4 text-orange-500"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                /><path d="M12 7v5l3 2" />
+              </svg>
               选择禁言时长
             </p>
             <button
               v-for="preset in MUTE_PRESETS"
               :key="preset.hours"
               type="button"
-              class="block w-full rounded-md px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+              class="block w-full rounded-lg px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-orange-50 hover:text-orange-700 disabled:opacity-50"
               :disabled="muteBusyId !== 0"
               @click="muteUser(muteMenuId, preset.hours)"
             >
