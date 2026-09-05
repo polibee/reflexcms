@@ -107,7 +107,7 @@ cd reflexcms
 
 [![Vast.ai](docs/images/vast-ai.ico)](https://cloud.vast.ai/?ref_id=91181)
 
-**[Vast.ai — 高性价比 GPU 云租用](https://cloud.vast.ai/?ref_id=91181)**：如果你需要为 AI 摘要、内容审核等模块准备 GPU 算力，推荐试试 [Vast.ai](https://cloud.vast.ai/?ref_id=91181)——按秒计费、海量社区 GPU、价格仅为主流云的零头。
+**[Vast.ai — 高性价比 GPU 云租用](https://cloud.vast.ai/?ref_id=91181)**：如果你需要为 AI 摘要、内容审核等模块准备 GPU 算力，推荐试试 [Vast.ai](https://cloud.vast.ai/?ref_id=91181)——按时计费、海量社区 GPU、价格仅为主流云的零头。
 
 ## 📄 License
 
