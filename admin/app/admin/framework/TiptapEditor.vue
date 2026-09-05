@@ -128,40 +128,66 @@ function applyColor(v: string) {
   editor.value?.chain().focus().setColor(v).run()
 }
 
-const toolGroups: Array<Array<{ label: string; title: string; run: () => void; active?: () => boolean }>> = [
+/* Toolbar icons: inline SVG path data (lucide-style, 24×24 stroke). Text
+ * glyphs like ↺/❝/☑ render as tofu boxes under some Windows fonts, so the
+ * toolbar avoids Unicode symbols entirely. */
+const ICONS: Record<string, string> = {
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/>',
+  bold: '<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/>',
+  italic: '<line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/>',
+  strike: '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>',
+  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/>',
+  code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+  highlighter: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4l8 8Z"/>',
+  quote: '<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>',
+  list: '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+  ordered: '<line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+  tasks: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  alignLeft: '<line x1="21" x2="3" y1="6" y2="6"/><line x1="15" x2="3" y1="12" y2="12"/><line x1="17" x2="3" y1="18" y2="18"/>',
+  alignCenter: '<line x1="21" x2="3" y1="6" y2="6"/><line x1="17" x2="7" y1="12" y2="12"/><line x1="19" x2="5" y1="18" y2="18"/>',
+  alignRight: '<line x1="21" x2="3" y1="6" y2="6"/><line x1="21" x2="9" y1="12" y2="12"/><line x1="21" x2="7" y1="18" y2="18"/>',
+  codeBlock: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="m10 10-2 2 2 2"/><path d="m14 10 2 2-2 2"/>',
+  hr: '<line x1="5" x2="19" y1="12" y2="12"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  clear: '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>'
+}
+
+const toolGroups: Array<Array<{ title: string; icon: string; run: () => void; active?: () => boolean }>> = [
   [
-    { label: '↺', title: '撤销', run: () => editor.value?.chain().focus().undo().run() },
-    { label: '↻', title: '重做', run: () => editor.value?.chain().focus().redo().run() }
+    { title: '撤销', icon: 'undo', run: () => editor.value?.chain().focus().undo().run() },
+    { title: '重做', icon: 'redo', run: () => editor.value?.chain().focus().redo().run() }
   ],
   [
-    { label: 'B', title: '粗体', run: () => editor.value?.chain().focus().toggleBold().run(), active: isActive('bold') },
-    { label: 'I', title: '斜体', run: () => editor.value?.chain().focus().toggleItalic().run(), active: isActive('italic') },
-    { label: 'S', title: '删除线', run: () => editor.value?.chain().focus().toggleStrike().run(), active: isActive('strike') },
-    { label: 'U', title: '下划线', run: () => editor.value?.chain().focus().toggleUnderline().run(), active: isActive('underline') },
-    { label: '</>', title: '行内代码', run: () => editor.value?.chain().focus().toggleCode().run(), active: isActive('code') },
-    { label: '🖍', title: '高亮', run: () => editor.value?.chain().focus().toggleHighlight().run(), active: isActive('highlight') }
+    { title: '粗体', icon: 'bold', run: () => editor.value?.chain().focus().toggleBold().run(), active: isActive('bold') },
+    { title: '斜体', icon: 'italic', run: () => editor.value?.chain().focus().toggleItalic().run(), active: isActive('italic') },
+    { title: '删除线', icon: 'strike', run: () => editor.value?.chain().focus().toggleStrike().run(), active: isActive('strike') },
+    { title: '下划线', icon: 'underline', run: () => editor.value?.chain().focus().toggleUnderline().run(), active: isActive('underline') },
+    { title: '行内代码', icon: 'code', run: () => editor.value?.chain().focus().toggleCode().run(), active: isActive('code') },
+    { title: '高亮', icon: 'highlighter', run: () => editor.value?.chain().focus().toggleHighlight().run(), active: isActive('highlight') }
   ],
   [
-    { label: 'H2', title: '标题', run: () => editor.value?.chain().focus().toggleHeading({ level: 2 }).run(), active: isActive('heading', { level: 2 }) },
-    { label: 'H3', title: '小标题', run: () => editor.value?.chain().focus().toggleHeading({ level: 3 }).run(), active: isActive('heading', { level: 3 }) },
-    { label: '❝', title: '引用', run: () => editor.value?.chain().focus().toggleBlockquote().run(), active: isActive('blockquote') }
+    { title: '标题', icon: 'H2', run: () => editor.value?.chain().focus().toggleHeading({ level: 2 }).run(), active: isActive('heading', { level: 2 }) },
+    { title: '小标题', icon: 'H3', run: () => editor.value?.chain().focus().toggleHeading({ level: 3 }).run(), active: isActive('heading', { level: 3 }) },
+    { title: '引用', icon: 'quote', run: () => editor.value?.chain().focus().toggleBlockquote().run(), active: isActive('blockquote') }
   ],
   [
-    { label: '•', title: '无序列表', run: () => editor.value?.chain().focus().toggleBulletList().run(), active: isActive('bulletList') },
-    { label: '1.', title: '有序列表', run: () => editor.value?.chain().focus().toggleOrderedList().run(), active: isActive('orderedList') },
-    { label: '☑', title: '任务列表', run: () => editor.value?.chain().focus().toggleTaskList().run(), active: isActive('taskList') }
+    { title: '无序列表', icon: 'list', run: () => editor.value?.chain().focus().toggleBulletList().run(), active: isActive('bulletList') },
+    { title: '有序列表', icon: 'ordered', run: () => editor.value?.chain().focus().toggleOrderedList().run(), active: isActive('orderedList') },
+    { title: '任务列表', icon: 'tasks', run: () => editor.value?.chain().focus().toggleTaskList().run(), active: isActive('taskList') }
   ],
   [
-    { label: '⯇', title: '左对齐', run: () => editor.value?.chain().focus().setTextAlign('left').run(), active: isActive('textAlign', { textAlign: 'left' }) },
-    { label: '≡', title: '居中', run: () => editor.value?.chain().focus().setTextAlign('center').run(), active: isActive('textAlign', { textAlign: 'center' }) },
-    { label: '⯈', title: '右对齐', run: () => editor.value?.chain().focus().setTextAlign('right').run(), active: isActive('textAlign', { textAlign: 'right' }) }
+    { title: '左对齐', icon: 'alignLeft', run: () => editor.value?.chain().focus().setTextAlign('left').run(), active: isActive('textAlign', { textAlign: 'left' }) },
+    { title: '居中', icon: 'alignCenter', run: () => editor.value?.chain().focus().setTextAlign('center').run(), active: isActive('textAlign', { textAlign: 'center' }) },
+    { title: '右对齐', icon: 'alignRight', run: () => editor.value?.chain().focus().setTextAlign('right').run(), active: isActive('textAlign', { textAlign: 'right' }) }
   ],
   [
-    { label: '</>', title: '代码块', run: () => editor.value?.chain().focus().toggleCodeBlock().run(), active: isActive('codeBlock') },
-    { label: '—', title: '分隔线', run: () => editor.value?.chain().focus().setHorizontalRule().run() },
-    { label: '🔗', title: '链接', run: () => openDialog('link'), active: isActive('link') },
-    { label: '🖼', title: '图片', run: () => openDialog('image') },
-    { label: '⌫', title: '清除格式', run: () => editor.value?.chain().focus().unsetAllMarks().clearNodes().run() }
+    { title: '代码块', icon: 'codeBlock', run: () => editor.value?.chain().focus().toggleCodeBlock().run(), active: isActive('codeBlock') },
+    { title: '分隔线', icon: 'hr', run: () => editor.value?.chain().focus().setHorizontalRule().run() },
+    { title: '链接', icon: 'link', run: () => openDialog('link'), active: isActive('link') },
+    { title: '图片', icon: 'image', run: () => openDialog('image') },
+    { title: '清除格式', icon: 'clear', run: () => editor.value?.chain().focus().unsetAllMarks().clearNodes().run() }
   ]
 ]
 </script>
@@ -176,12 +202,24 @@ const toolGroups: Array<Array<{ label: string; title: string; run: () => void; a
           :key="tool.title"
           type="button"
           :title="tool.title"
-          class="inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+          class="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
           :class="{ 'bg-accent text-foreground shadow-sm': tool.active?.() }"
           :disabled="disabled"
           @click.prevent="tool.run()"
         >
-          {{ tool.label }}
+          <svg
+            v-if="ICONS[tool.icon]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4"
+            aria-hidden="true"
+            v-html="ICONS[tool.icon]"
+          />
+          <span v-else class="text-xs font-semibold">{{ tool.icon }}</span>
         </button>
         <input
           v-if="gi === 1"
