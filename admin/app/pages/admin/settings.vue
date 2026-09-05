@@ -29,6 +29,10 @@ const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = 
         { label: '仅 CMS 文章', value: 'cms' },
         { label: '仅论坛帖子', value: 'forum' }
       ] },
+      { key: 'site.locale', label: '前台语言', type: 'select', helpText: '公共前台界面语言（后台保持中文）', options: [
+        { label: '简体中文', value: 'zh-CN' },
+        { label: 'English', value: 'en' }
+      ] },
       { key: 'site.description', label: '站点描述', type: 'textarea', helpText: '用于 SEO meta description' },
       { key: 'site.keywords', label: 'SEO 关键词', type: 'text', helpText: '逗号分隔' },
       { key: 'site.icp', label: '备案号', type: 'text' }
@@ -38,6 +42,7 @@ const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = 
     group: 'registration', title: '注册限制',
     fields: [
       { key: 'reg.enabled', label: '开放注册', type: 'switch' },
+      { key: 'reg.invite_required', label: '邀请码注册', type: 'switch', helpText: '开启后注册必须填写有效邀请码（可在商城购买）' },
       { key: 'reg.mainstream_only', label: '仅主流邮箱', type: 'switch', helpText: 'Gmail、Outlook、QQ 邮箱等' },
       { key: 'reg.email_whitelist', label: '邮箱域名白名单', type: 'textarea', helpText: '每行一个域名；为空则不限制' },
       { key: 'reg.email_blacklist', label: '邮箱域名黑名单', type: 'textarea', helpText: '每行一个域名（永久生效）' },
@@ -88,18 +93,8 @@ const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = 
       { key: 'ai.base_url', label: '自定义端点', type: 'text' }
     ]
   },
-  {
-    group: 'points', title: '积分与等级',
-    fields: [
-      { key: 'points.currency_name', label: '货币名称', type: 'text', helpText: '社区货币的展示名，如"鸡腿"' },
-      { key: 'points.level_thresholds', label: '等级阈值', type: 'text', helpText: '累计获得货币的升级阈值，逗号分隔，如 0,100,300,600,1000' },
-      { key: 'points.earn_topic', label: '发帖奖励', type: 'number' },
-      { key: 'points.topic_daily_cap', label: '发帖每日上限', type: 'number', helpText: '每日通过发帖最多可获得的货币量' },
-      { key: 'points.earn_reply', label: '回复奖励', type: 'number' },
-      { key: 'points.reply_daily_cap', label: '回复每日上限', type: 'number' },
-      { key: 'points.earn_signin', label: '签到奖励', type: 'number', helpText: '每日签到一次的奖励' }
-    ]
-  },
+  // 积分与等级设置已迁移至「Forum → 等级与签到设置」（/admin/forum-levels），
+  // 避免两处重复配置同一批 settings 键。
   {
     group: 'pay', title: '支付与商城',
     fields: [

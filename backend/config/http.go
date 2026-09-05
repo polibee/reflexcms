@@ -14,7 +14,9 @@ func init() {
 		// HTTP Drivers
 		"drivers": map[string]any{
 			"gin": map[string]any{
-				"body_limit":   4096,
+				// 1 MiB: must exceed the largest allowed topic/reply body
+				// (50000 chars of CJK ≈ 150 KB) with headroom for headers.
+				"body_limit":   1024 * 1024,
 				"header_limit": 4096,
 				"route": func() (route.Route, error) {
 					return ginfacades.Route("gin"), nil

@@ -222,14 +222,27 @@ function notifyFront(msg: string) {
 
 /* mute / ban from the reply card (moderators mute; admins can also ban) */
 const muteBusyId = ref(0)
+const muteMenuId = ref(0)
 
-async function muteUser(userId: number, days: number) {
+const MUTE_PRESETS = [
+  { label: '禁言 1 小时', hours: 1 },
+  { label: '禁言 6 小时', hours: 6 },
+  { label: '禁言 12 小时', hours: 12 },
+  { label: '禁言 1 天', hours: 24 },
+  { label: '禁言 3 天', hours: 72 },
+  { label: '禁言 7 天', hours: 168 },
+  { label: '禁言 30 天', hours: 720 },
+  { label: '永久禁言', hours: 875999 }
+]
+
+async function muteUser(userId: number, hours: number) {
   if (muteBusyId.value) return
   muteBusyId.value = userId
+  muteMenuId.value = 0
   try {
     const res = await rawFetch(`/api/v1/users/${userId}/mute`, {
       method: 'POST',
-      body: { days }
+      body: { duration_hours: hours }
     }) as { message?: string }
     notifyFront(res.message ?? '已禁言')
   } catch (e: unknown) {
@@ -392,10 +405,10 @@ async function banUser(userId: number, days: number) {
                     <button
                       v-if="topic.can_moderate && reply.user_id !== me?.id"
                       type="button"
-                      title="禁言 3 天"
+                      title="禁言"
                       class="text-xs text-gray-300 hover:text-orange-500"
                       :disabled="muteBusyId === reply.user_id"
-                      @click="muteUser(reply.user_id, 3)"
+                      @click="muteMenuId = muteMenuId === reply.user_id ? 0 : reply.user_id"
                     >
                       🔇
                     </button>
@@ -436,6 +449,32 @@ async function banUser(userId: number, days: number) {
           >
             暂无回复
           </p>
+        </div>
+
+        <!-- mute duration menu -->
+        <div
+          v-if="muteMenuId"
+          class="fixed inset-0 z-50"
+          @click="muteMenuId = 0"
+        >
+          <div
+            class="absolute left-1/2 top-1/2 w-56 -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-white p-2 shadow-lg"
+            @click.stop
+          >
+            <p class="px-2 py-1 text-xs font-semibold text-gray-500">
+              选择禁言时长
+            </p>
+            <button
+              v-for="preset in MUTE_PRESETS"
+              :key="preset.hours"
+              type="button"
+              class="block w-full rounded-md px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+              :disabled="muteBusyId !== 0"
+              @click="muteUser(muteMenuId, preset.hours)"
+            >
+              {{ preset.label }}
+            </button>
+          </div>
         </div>
 
         <PublicPagination

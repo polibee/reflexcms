@@ -14,11 +14,13 @@ func seedDefaults() {
 	defaults := []seedEntry{
 		{"site.mode", "hybrid", "site"},
 		{"site.home", "both", "site"},
+		{"site.locale", "zh-CN", "site"},
 		{"site.name", "ReflexCMS", "site"},
 		{"site.description", "", "site"},
 		{"site.icp", "", "site"},
 		{"site.keywords", "", "site"},
 		{"reg.enabled", true, "registration"},
+		{"reg.invite_required", false, "registration"},
 		{"reg.email_whitelist", []string{}, "registration"},
 		{"reg.email_blacklist", []string{}, "registration"},
 		{"reg.mainstream_only", false, "registration"},

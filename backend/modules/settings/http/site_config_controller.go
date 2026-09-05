@@ -26,6 +26,7 @@ func (r *SiteConfigController) Show(ctx http.Context) http.Response {
 		"name": facades.Config().GetString("app.name", "ReflexCMS"),
 		"mode": mode,
 		"home": home,
+		"locale": settingsservices.Get("site.locale"),
 		"seo": map[string]any{
 			"description": settingsservices.Get("site.seo.description"),
 			"icp":         settingsservices.Get("site.icp"),

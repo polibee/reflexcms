@@ -7,6 +7,7 @@ export interface SiteConfig {
   name: string
   mode: string
   home?: 'cms' | 'forum' | 'both'
+  locale?: string
   seo: { description: string, icp: string }
   sections: string[]
 }

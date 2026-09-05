@@ -269,12 +269,18 @@ func registerPublicRoutes() {
 			if json.Unmarshal(body, &ev) == nil && strings.EqualFold(ev.Data.Status, "paid") {
 				orderNo = ev.Data.Metadata.OrderNo
 			}
-		case "xunhupay", "codepay":
-			// These providers' wire protocol requires an MD5 signature;
-			// the project security policy blocks that primitive, so the
-			// gateways are disabled and their callbacks are rejected until
-			// the policy owner grants an explicit exception.
-			return httpx.Error(ctx, 501, "该渠道签名协议与本项目安全策略冲突，暂未启用（见 gateways/legacy_md5_gateways.go）")
+		case "xunhupay":
+			if !paygateways.VerifyXunhu(paySet("pay.xunhu_appsecret", ""), form) {
+				return httpx.Error(ctx, 403, "invalid signature")
+			}
+			if form["status"] == "OD" || form["trade_status"] == "OD" {
+				orderNo = form["trade_order_id"]
+			}
+		case "codepay":
+			if !paygateways.VerifyCodePay(paySet("pay.codepay_key", ""), form) {
+				return httpx.Error(ctx, 403, "invalid signature")
+			}
+			orderNo = form["out_trade_no"]
 		case "paypal":
 			// Trust only after PayPal-side verification.
 			if !paygateways.VerifyPayPal(
@@ -299,12 +305,13 @@ func registerPublicRoutes() {
 
 		if orderNo == "" {
 			// Not a completion event — acknowledge so the provider stops retrying.
-			return ctx.Response().Success().Json(http.Json{"ok": true})
+			return ctx.Response().Status(200).String("ok")
 		}
 		if err := markOrderPaid(orderNo); err != nil {
 			return httpx.Error(ctx, 500, err.Error())
 		}
-		return ctx.Response().Success().Json(http.Json{"ok": true})
+		// Xcash (and most EPay-style providers) require the literal body "ok".
+		return ctx.Response().Status(200).String("ok")
 	})
 }
 
@@ -316,7 +323,12 @@ func shopEnabled() bool {
 }
 
 func siteURL() string {
-	return strings.TrimRight(paySet("app.url", "http://localhost:3000"), "/")
+	// APP_URL from .env is the public origin payment gateways call back to;
+	// settings cannot provide it (they're DB rows, often behind NAT).
+	if u := facades.Config().GetString("http.url", ""); u != "" {
+		return strings.TrimRight(u, "/")
+	}
+	return strings.TrimRight(facades.Config().GetString("app.url", "http://localhost:3000"), "/")
 }
 
 func affLinks() map[string]string {

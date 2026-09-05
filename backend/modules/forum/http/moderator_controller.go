@@ -8,6 +8,7 @@ import (
 
 	"reflexcms/backend/app/facades"
 	httpx "reflexcms/backend/app/support/httpx"
+	accessmatcher "reflexcms/backend/modules/access/services"
 	authhttp "reflexcms/backend/modules/auth/http/controllers"
 )
 
@@ -60,8 +61,17 @@ func (r *PublicController) ModerateTopic(ctx http.Context) http.Response {
 	}
 	boardID, _ := toUint64(topics[0]["forum_category_id"])
 
-	// Admins (forum.manage) bypass the board assignment; moderators need it.
-	if identity.Role != "super-admin" && !IsModerator(boardID, identity.ID) {
+	// Governance linkage: super-admin always passes; users carrying the
+	// moderator ROLE (RBAC: topics.pin etc.) moderate site-wide; everyone
+	// else needs a per-board assignment in board_moderators.
+	canModerate := identity.Role == "super-admin"
+	if !canModerate && accessmatcher.Can(identity.Permissions, "topics.pin") {
+		canModerate = true
+	}
+	if !canModerate {
+		canModerate = IsModerator(boardID, identity.ID)
+	}
+	if !canModerate {
 		return httpx.Error(ctx, 403, "只有该板块的版主才能执行此操作")
 	}
 
@@ -104,8 +114,8 @@ func callerModeratesAny(userID uint64) bool {
 	return count > 0
 }
 
-// MuteUser: POST /api/v1/users/{id}/mute — {days}. Blocks the user from
-// posting topics and replies until the term expires. Moderators only.
+// MuteUser: POST /api/v1/users/{id}/mute — {duration_hours}. 1–875999
+// hours (~100 years = permanent). Moderators only; super-admin bypasses.
 func MuteUser(ctx http.Context) http.Response {
 	if resp := gateOr404(ctx, "topics"); resp != nil {
 		return *resp
@@ -127,21 +137,33 @@ func MuteUser(ctx http.Context) http.Response {
 	}
 
 	var req struct {
-		Days int `json:"days"`
+		DurationHours int `json:"duration_hours"`
 	}
-	if err := ctx.Request().Bind(&req); err != nil || req.Days < 1 || req.Days > 30 {
-		return httpx.Error(ctx, 422, "禁言天数须在 1–30 天之间")
+	if err := ctx.Request().Bind(&req); err != nil || req.DurationHours < 1 || req.DurationHours > 875999 {
+		return httpx.Error(ctx, 422, "禁言时长无效（1 小时 ~ 永久）")
 	}
 
-	if _, err := facades.Orm().Query().Exec(`
-		UPDATE users SET muted_until = NOW() + make_interval(days => ?)
-		WHERE id = ? AND deleted_at IS NULL
-	`, req.Days, targetID); err != nil {
-		return httpx.Error(ctx, 500, err.Error())
+	hours := req.DurationHours
+	message := "已禁言"
+	if hours >= 875999 {
+		// permanent: far-future timestamp
+		if _, err := facades.Orm().Query().Exec(`
+			UPDATE users SET muted_until = '2999-01-01T00:00:00Z'
+			WHERE id = ? AND deleted_at IS NULL
+		`, targetID); err != nil {
+			return httpx.Error(ctx, 500, err.Error())
+		}
+		message = "已永久禁言"
+	} else {
+		if _, err := facades.Orm().Query().Exec(`
+			UPDATE users SET muted_until = NOW() + make_interval(hours => ?)
+			WHERE id = ? AND deleted_at IS NULL
+		`, hours, targetID); err != nil {
+			return httpx.Error(ctx, 500, err.Error())
+		}
+		message = fmt.Sprintf("已禁言 %d 小时", hours)
 	}
-	return ctx.Response().Success().Json(http.Json{
-		"message": fmt.Sprintf("已禁言 %d 天", req.Days),
-	})
+	return ctx.Response().Success().Json(http.Json{"message": message})
 }
 
 // UnmuteUser: POST /api/v1/users/{id}/unmute — lifts the mute early.

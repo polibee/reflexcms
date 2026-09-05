@@ -23,6 +23,7 @@ interface TopicRow {
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useLocale()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rawFetch = $fetch as unknown as (url: string, opts?: Record<string, any>) => Promise<unknown>
@@ -76,30 +77,30 @@ useHead({ title: '论坛' })
   <div>
     <div class="mb-5 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">
-        论坛
+        {{ t('forum.title') }}
       </h1>
       <div class="flex rounded-lg border border-gray-200 bg-white p-1">
-          <button
-            type="button"
-            class="rounded-md px-4 py-1.5 text-sm font-medium"
-            :class="tab === 'topics'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-600 hover:bg-gray-50'"
-            @click="switchTab('topics')"
-          >
-            最新帖子
-          </button>
-          <button
-            type="button"
-            class="rounded-md px-4 py-1.5 text-sm font-medium"
-            :class="tab === 'replies'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-600 hover:bg-gray-50'"
-            @click="switchTab('replies')"
-          >
-            最新回复
-          </button>
-        </div>
+        <button
+          type="button"
+          class="rounded-md px-4 py-1.5 text-sm font-medium"
+          :class="tab === 'topics'
+            ? 'bg-blue-600 text-white'
+            : 'text-gray-600 hover:bg-gray-50'"
+          @click="switchTab('topics')"
+        >
+          {{ t('forum.latest') }}
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-4 py-1.5 text-sm font-medium"
+          :class="tab === 'replies'
+            ? 'bg-blue-600 text-white'
+            : 'text-gray-600 hover:bg-gray-50'"
+          @click="switchTab('replies')"
+        >
+          {{ t('forum.latest_replies') }}
+        </button>
+      </div>
     </div>
 
     <div
@@ -157,7 +158,7 @@ useHead({ title: '论坛' })
           v-if="!topics.length"
           class="py-16 text-center text-gray-400"
         >
-          {{ tab === 'topics' ? '暂无帖子' : '暂无回复' }}
+          {{ tab === 'topics' ? t('forum.empty') : t('forum.empty_replies') }}
         </p>
       </div>
 

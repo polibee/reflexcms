@@ -70,6 +70,13 @@ func registerRoutes() {
 	r.Post("/api/v1/me/notifications/read-all", ReadAllNotifications)
 	r.Post("/api/v1/me/blocked/toggle", ToggleBlock)
 	r.Get("/api/v1/me/blocked", MyBlocked)
+	r.Post("/api/v1/auth/register", RegisterPublic)
+	r.Get("/api/v1/auth/register-config", func(ctx http.Context) http.Response {
+		return ctx.Response().Success().Json(http.Json{
+			"invite_required": regInviteRequired(),
+			"enabled":         regEnabled(),
+		})
+	})
 }
 
 // renderRole passes permissions through as a JSON string[] so the

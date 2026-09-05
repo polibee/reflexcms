@@ -93,6 +93,14 @@ async function doSignin() {
   }
 }
 
+async function doLogout() {
+  try {
+    await $fetch('/api/auth/logout', { method: 'POST' })
+  } catch { /* silent */ }
+  await navigateTo('/')
+  window.location.reload()
+}
+
 watch(authUser, async (u) => {
   if (!u) {
     stats.value = null
@@ -412,6 +420,11 @@ function navAllowed(url: string): boolean {
                     class="flex-1 rounded-md border border-gray-300 py-1.5 text-center text-gray-600 hover:bg-gray-50"
                   >进入后台</NuxtLink>
                 </div>
+                <button
+                  type="button"
+                  class="w-full rounded-md py-1.5 text-center text-xs text-gray-400 hover:text-red-500"
+                  @click="doLogout"
+                >退出登录</button>
               </template>
               <template v-else>
                 <NuxtLink
