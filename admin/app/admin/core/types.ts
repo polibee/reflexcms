@@ -150,7 +150,7 @@ export interface ColumnDefLite {
 
 /* ---------------- Infolist Entries ---------------- */
 
-export type EntryKind = 'text' | 'badge' | 'boolean' | 'money' | 'date' | 'datetime' | 'link'
+export type EntryKind = 'text' | 'badge' | 'boolean' | 'money' | 'money-cents' | 'date' | 'datetime' | 'link'
 
 export interface EntryNode {
   kind: EntryKind

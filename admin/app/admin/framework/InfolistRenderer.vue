@@ -11,6 +11,7 @@ function display(entry: EntryNode): string {
   const raw = props.record[entry.name]
   switch (entry.kind) {
     case 'money': return formatMoney(raw, entry.prefix)
+    case 'money-cents': return formatMoney(Number(raw ?? 0) / 100, props.record.currency ? `${props.record.currency} ` : '$')
     case 'date': return formatDate(raw)
     case 'datetime': return formatDateTime(raw)
     case 'boolean': return raw ? 'Yes' : 'No'

@@ -9,8 +9,11 @@ const panel = getPanel()
 
 const prefix = computed(() => props.resource.permissionPrefix)
 const basePath = computed(() => `${panel.path}/${props.resource.name}`)
-const canCreate = computed(() => allow(`${prefix.value}.create`))
-const canEdit = computed(() => allow(`${prefix.value}.edit`))
+/* Resources like orders declare no form fields (immutable records) — the
+ * create/edit pages would render blank, so the buttons must hide. */
+const hasForm = computed(() => (props.resource.form?.() ?? []).length > 0)
+const canCreate = computed(() => allow(`${prefix.value}.create`) && hasForm.value)
+const canEdit = computed(() => allow(`${prefix.value}.edit`) && hasForm.value)
 const canDelete = computed(() => allow(`${prefix.value}.delete`))
 
 const state = useResourceTable(props.resource)

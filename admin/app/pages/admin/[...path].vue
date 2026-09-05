@@ -31,6 +31,7 @@ const id = segments[1]
 const action = segments[2]
 
 /* schema presence checks: pages cannot render without their schemas */
+const hasForm = computed(() => (resource.form?.() ?? []).length > 0)
 if ((id === 'create' || action === 'edit') && !resource.form) {
   throw createError({ statusCode: 400, statusMessage: `Resource "${resource.name}" does not define a form schema.`, fatal: true })
 }
@@ -53,9 +54,16 @@ if (!id) {
   if (!allow(`${resource.permissionPrefix}.edit`)) {
     throw createError({ statusCode: 403, statusMessage: 'Edit permission required.', fatal: true })
   }
-  component = ResourceFormPage
-  bind.mode = 'edit'
-  bind.id = id
+  if (!hasForm.value) {
+    // Immutable records (orders) define no form fields — the edit page would
+    // render blank, so show the read-only detail view instead.
+    component = ResourceViewPage
+    bind.id = id
+  } else {
+    component = ResourceFormPage
+    bind.mode = 'edit'
+    bind.id = id
+  }
 } else {
   if (!allow(`${resource.permissionPrefix}.view`)) {
     throw createError({ statusCode: 403, statusMessage: 'View permission required.', fatal: true })

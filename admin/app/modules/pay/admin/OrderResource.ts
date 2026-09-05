@@ -50,12 +50,18 @@ export default defineResource({
   infolist: () => [
     textEntry('order_no', '订单号'),
     textEntry('title', '商品'),
-    textEntry('amount_cents', '金额（分）'),
+    moneyCentsEntry('amount_cents', '金额'),
     textEntry('currency', '货币'),
     textEntry('gateway', '渠道'),
     textEntry('gateway_ref', '渠道单号'),
-    textEntry('status', '状态'),
-    textEntry('paid_at', '支付时间'),
-    textEntry('created_at', '创建时间')
+    badgeEntry('status', '状态', {
+      pending: { label: '待支付', variant: 'warning' },
+      paid: { label: '已支付', variant: 'success' },
+      failed: { label: '支付失败', variant: 'destructive' },
+      refunded: { label: '已退款', variant: 'secondary' },
+      closed: { label: '已关闭', variant: 'secondary' }
+    }),
+    dateEntry('paid_at', '支付时间'),
+    datetimeEntry('created_at', '创建时间')
   ]
 })

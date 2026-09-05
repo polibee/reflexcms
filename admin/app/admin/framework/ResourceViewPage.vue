@@ -10,7 +10,11 @@ const props = defineProps<{
 const panel = getPanel()
 const basePath = computed(() => `${panel.path}/${props.resource.name}`)
 const allow = useCan()
-const canEdit = computed(() => allow(`${props.resource.permissionPrefix}.edit`))
+/* Hide Edit on immutable records (no form fields, e.g. orders) — otherwise
+ * the edit page renders as a blank form. */
+const canEdit = computed(() =>
+  allow(`${props.resource.permissionPrefix}.edit`) && (props.resource.form?.() ?? []).length > 0
+)
 
 const record = ref<Record<string, unknown> | null>(null)
 const loading = ref(true)

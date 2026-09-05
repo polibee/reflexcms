@@ -29,6 +29,12 @@ export function moneyEntry(name: string, label: string, opts?: EntryOptions): En
   return entry('money', name, label, { prefix: '$', ...opts })
 }
 
+/* Integer-cent amounts (e.g. order.amount_cents) — rendered as major units
+ * using the record's own currency code when present. */
+export function moneyCentsEntry(name: string, label: string, opts?: EntryOptions): EntryNode {
+  return entry('money-cents', name, label, opts)
+}
+
 export function dateEntry(name: string, label: string): EntryNode {
   return entry('date', name, label)
 }
