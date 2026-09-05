@@ -237,7 +237,7 @@ func MyProfile(ctx http.Context) http.Response {
 	var rows []map[string]any
 	if err := facades.Orm().Query().Table("users").
 		Where("id = ?", identity.ID).
-		Select("id", "username", "email", "avatar", "bio", "website", "profile_card", "created_at").
+		Select("id", "username", "email", "avatar", "bio", "website", "signature", "profile_card", "created_at").
 		Get(&rows); err != nil || len(rows) == 0 {
 		return httpx.Error(ctx, 404, "user not found")
 	}
@@ -594,6 +594,12 @@ func UpdateMyProfileCard(ctx http.Context) http.Response {
 	return ctx.Response().Success().Json(http.Json{"message": msg})
 }
 
+// dataNormalize trims a string field; present=false means the caller did
+// not send it (absent key), letting updates distinguish "clear" vs "skip".
+func dataNormalize(s string) (string, bool) {
+	return strings.TrimSpace(s), strings.TrimSpace(s) != "" || s != ""
+}
+
 // UpdateMyProfile: PUT /api/v1/me/profile — edit username/bio/website/avatar.
 func UpdateMyProfile(ctx http.Context) http.Response {
 	identity, ok := authhttp.RequireIdentity(ctx)
@@ -602,10 +608,11 @@ func UpdateMyProfile(ctx http.Context) http.Response {
 	}
 
 	var req struct {
-		Username string `json:"username"`
-		Bio      string `json:"bio"`
-		Website  string `json:"website"`
-		Avatar   string `json:"avatar"`
+		Username  string `json:"username"`
+		Bio       string `json:"bio"`
+		Website   string `json:"website"`
+		Avatar    string `json:"avatar"`
+		Signature string `json:"signature"`
 	}
 	if err := ctx.Request().Bind(&req); err != nil {
 		return httpx.Error(ctx, 422, "invalid request body")
@@ -624,7 +631,15 @@ func UpdateMyProfile(ctx http.Context) http.Response {
 		}
 		updates["username"] = name
 	}
-	if req.Bio != "" || req.Website != "" || req.Avatar != "" {
+	// Signature: short markdown, rendered client-side through the escaping
+	// renderer (no HTML/images/scripts survive); plain text + links only.
+	if sig, present := dataNormalize(req.Signature); present {
+		if len([]rune(sig)) > 200 {
+			return httpx.Error(ctx, 422, "签名过长（最多 200 字）")
+		}
+		updates["signature"] = sig
+	}
+	if req.Bio != "" || req.Website != "" || req.Avatar != "" || req.Signature != "" {
 		if len([]rune(req.Bio)) > 500 {
 			return httpx.Error(ctx, 422, "简介过长（最多 500 字）")
 		}

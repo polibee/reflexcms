@@ -19,6 +19,9 @@ type Product struct {
 	Image       string `gorm:"size:512" json:"image"`
 	IsActive    bool   `gorm:"default:true;index" json:"is_active"`
 	Sort        int    `gorm:"default:100" json:"sort"`
+	// Type: 'general' (plain purchase) or 'invite' (auto-delivers an invite
+	// code to the buyer on payment).
+	Type string `gorm:"size:16;default:general" json:"type"`
 }
 
 func (Product) TableName() string { return "products" }
@@ -38,6 +41,8 @@ type Order struct {
 	GatewayRef string `gorm:"size:128" json:"gateway_ref"`
 	Status    string  `gorm:"size:32;default:pending;index" json:"status"`
 	PaidAt    *string `gorm:"" json:"paid_at"`
+	// GrantedCode holds the delivered invite code for type='invite' goods.
+	GrantedCode string `gorm:"size:64" json:"granted_code,omitempty"`
 }
 
 func (Order) TableName() string { return "orders" }

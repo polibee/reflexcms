@@ -11,6 +11,7 @@ export default defineResource({
   table: () => [
     textColumn('id', 'ID', { sortable: true }),
     textColumn('title', '标题'),
+    textColumn('type', '类型'),
     numberColumn('price_cents', '价格（分）', { sortable: true }),
     textColumn('currency', '货币'),
     numberColumn('stock', '库存', { sortable: true }),
@@ -24,10 +25,14 @@ export default defineResource({
       textInput('title', '商品标题', { required: true, colSpan: 2 }),
       textarea('description', '商品描述', { rows: 3, colSpan: 2 }),
       grid(2, [
+        selectInput('type', '商品类型', [
+          { label: '普通商品', value: 'general' },
+          { label: '邀请码（支付后自动发放）', value: 'invite' }
+        ], { required: true, defaultValue: 'general', helpText: '邀请码商品在支付完成后自动生成邀请码并展示给买家' }),
+        numberInput('grant_points', '购买后赠送积分', { min: 0, helpText: '0 表示不赠送' }),
         numberInput('price_cents', '价格（最小货币单位/分）', { required: true, min: 0, helpText: '例如 $9.99 填 999' }),
         textInput('currency', '货币代码', { placeholder: 'USD / CNY', defaultValue: 'USD' }),
         numberInput('stock', '库存', { required: true, min: 0 }),
-        numberInput('grant_points', '购买后赠送积分', { min: 0, helpText: '0 表示不赠送' }),
         textInput('image', '封面图 URL', { colSpan: 2 }),
         switchInput('is_active', '上架')
       ]),

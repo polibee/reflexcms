@@ -94,3 +94,114 @@ func (r *PublicController) ModerateTopic(ctx http.Context) http.Response {
 	}
 	return ctx.Response().Success().Json(http.Json{"message": "操作成功", "action": req.Action})
 }
+
+// callerModeratesAny reports whether the identity moderates at least one
+// board (site-wide governance floor for mute/ban).
+func callerModeratesAny(userID uint64) bool {
+	var count int64
+	count, _ = facades.Orm().Query().Table("board_moderators").
+		Where("user_id = ?", userID).Count()
+	return count > 0
+}
+
+// MuteUser: POST /api/v1/users/{id}/mute — {days}. Blocks the user from
+// posting topics and replies until the term expires. Moderators only.
+func MuteUser(ctx http.Context) http.Response {
+	if resp := gateOr404(ctx, "topics"); resp != nil {
+		return *resp
+	}
+	identity, ok := authhttp.RequireIdentity(ctx)
+	if !ok {
+		return httpx.Error(ctx, 401, "请先登录")
+	}
+	if identity.Role != "super-admin" && !callerModeratesAny(identity.ID) {
+		return httpx.Error(ctx, 403, "仅版主可以执行禁言")
+	}
+
+	targetID, err := strconv.ParseUint(ctx.Request().Route("id"), 10, 64)
+	if err != nil || targetID == 0 {
+		return httpx.Error(ctx, 404, "user not found")
+	}
+	if targetID == identity.ID {
+		return httpx.Error(ctx, 422, "不能禁言自己")
+	}
+
+	var req struct {
+		Days int `json:"days"`
+	}
+	if err := ctx.Request().Bind(&req); err != nil || req.Days < 1 || req.Days > 30 {
+		return httpx.Error(ctx, 422, "禁言天数须在 1–30 天之间")
+	}
+
+	if _, err := facades.Orm().Query().Exec(`
+		UPDATE users SET muted_until = NOW() + make_interval(days => ?)
+		WHERE id = ? AND deleted_at IS NULL
+	`, req.Days, targetID); err != nil {
+		return httpx.Error(ctx, 500, err.Error())
+	}
+	return ctx.Response().Success().Json(http.Json{
+		"message": fmt.Sprintf("已禁言 %d 天", req.Days),
+	})
+}
+
+// UnmuteUser: POST /api/v1/users/{id}/unmute — lifts the mute early.
+func UnmuteUser(ctx http.Context) http.Response {
+	if resp := gateOr404(ctx, "topics"); resp != nil {
+		return *resp
+	}
+	identity, ok := authhttp.RequireIdentity(ctx)
+	if !ok {
+		return httpx.Error(ctx, 401, "请先登录")
+	}
+	if identity.Role != "super-admin" && !callerModeratesAny(identity.ID) {
+		return httpx.Error(ctx, 403, "仅版主可以解除禁言")
+	}
+	targetID, err := strconv.ParseUint(ctx.Request().Route("id"), 10, 64)
+	if err != nil || targetID == 0 {
+		return httpx.Error(ctx, 404, "user not found")
+	}
+	if _, err := facades.Orm().Query().Exec(`
+		UPDATE users SET muted_until = NULL WHERE id = ?
+	`, targetID); err != nil {
+		return httpx.Error(ctx, 500, err.Error())
+	}
+	return ctx.Response().Success().Json(http.Json{"message": "已解除禁言"})
+}
+
+// BanUser: POST /api/v1/users/{id}/ban — {days}. Sets banned_until; login
+// auto-restores the account once the term passes. Super-admin only — bans
+// lock accounts out entirely, so they are not delegated to moderators.
+func BanUser(ctx http.Context) http.Response {
+	identity, ok := authhttp.RequireIdentity(ctx)
+	if !ok {
+		return httpx.Error(ctx, 401, "请先登录")
+	}
+	if identity.Role != "super-admin" {
+		return httpx.Error(ctx, 403, "仅超级管理员可以封禁账号")
+	}
+	targetID, err := strconv.ParseUint(ctx.Request().Route("id"), 10, 64)
+	if err != nil || targetID == 0 {
+		return httpx.Error(ctx, 404, "user not found")
+	}
+	if targetID == identity.ID {
+		return httpx.Error(ctx, 422, "不能封禁自己")
+	}
+
+	var req struct {
+		Days int `json:"days"`
+	}
+	if err := ctx.Request().Bind(&req); err != nil || req.Days < 1 || req.Days > 365 {
+		return httpx.Error(ctx, 422, "封禁天数须在 1–365 天之间")
+	}
+
+	if _, err := facades.Orm().Query().Exec(`
+		UPDATE users
+		SET banned_until = NOW() + make_interval(days => ?), status = 'banned', banned_at = NOW()
+		WHERE id = ? AND deleted_at IS NULL
+	`, req.Days, targetID); err != nil {
+		return httpx.Error(ctx, 500, err.Error())
+	}
+	return ctx.Response().Success().Json(http.Json{
+		"message": fmt.Sprintf("已封禁 %d 天", req.Days),
+	})
+}

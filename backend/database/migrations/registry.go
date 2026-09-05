@@ -24,6 +24,7 @@ func AccessMigrations() []schema.Migration {
 		&M20260826000002AddProfileCardToUsers{},
 		&M20260826000003CreateMessagesTable{},
 		&M20260826000005CreateBlockedUsersTable{},
+		&M20260826000010AddUserSignature{},
 	}
 }
 
@@ -34,11 +35,12 @@ func PagesMigrations() []schema.Migration {
 	}
 }
 
-// PayMigrations: products + orders (商城).
+// PayMigrations: products + orders (商城) + commerce enhancements.
 func PayMigrations() []schema.Migration {
 	return []schema.Migration{
 		&M20260826000006CreateProductsTable{},
 		&M20260826000007CreateOrdersTable{},
+		&M20260826000009CommerceEnhancements{},
 	}
 }
 

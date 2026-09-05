@@ -11,41 +11,22 @@ interface ShopProduct {
   price_cents: number
   currency: string
   stock: number
-  image: string
   grant_points: number
-}
-
-interface ShopPayload {
-  items: ShopProduct[]
-  currency: string
-  aff_links: Record<string, string>
-  gateways: string[]
+  type?: string
 }
 
 const { config } = useSiteConfig()
 const { get } = usePublicApi()
 
 const items = ref<ShopProduct[]>([])
-const gateways = ref<string[]>([])
-const affLinks = ref<Record<string, string>>({})
 const shopEnabled = computed(() => (config.value?.sections ?? []).includes('shop'))
 const loading = ref(true)
 
-const GATEWAY_LABELS: Record<string, string> = {
-  xcash: 'Xcash（加密支付）',
-  coinpayments: 'CoinPayments（加密支付）',
-  xunhupay: '虎皮椒（微信/支付宝）',
-  codepay: '码支付（个人收款）',
-  paypal: 'PayPal'
-}
-
-const GATEWAY_REGISTER: Record<string, string> = {
-  xcash: '注册 Xcash',
-  coinpayments: '注册 CoinPayments',
-  xunhupay: '注册虎皮椒',
-  codepay: '注册码支付',
-  paypal: '注册 PayPal'
-}
+const filter = ref<'all' | 'invite'>('all')
+const filtered = computed(() =>
+  filter.value === 'invite'
+    ? items.value.filter(p => p.type === 'invite')
+    : items.value)
 
 function fmtPrice(p: ShopProduct): string {
   const symbol = p.currency === 'CNY' ? '¥' : p.currency === 'USD' ? '$' : p.currency + ' '
@@ -60,10 +41,8 @@ onMounted(async () => {
   }
   if (shopEnabled.value) {
     try {
-      const res = await get<ShopPayload>('products')
+      const res = await get<{ items: ShopProduct[] }>('products')
       items.value = res.items ?? []
-      gateways.value = res.gateways ?? []
-      affLinks.value = res.aff_links ?? {}
     } catch { /* silent */ }
   }
   loading.value = false
@@ -82,41 +61,75 @@ useHead({ title: '商城' })
     </div>
 
     <template v-else-if="shopEnabled">
-      <h1 class="mb-2 text-2xl font-bold text-gray-900">
-        商城
-      </h1>
-      <p class="mb-6 text-sm text-gray-500">
-        购买积分套餐与社区服务，支付完成后积分自动到账
-      </p>
+      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">
+            商城
+          </h1>
+          <p class="mt-1 text-sm text-gray-500">
+            购买邀请码与社区服务，支付完成后自动发放
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex rounded-lg border border-gray-200 bg-white p-1 text-sm">
+            <button
+              type="button"
+              class="rounded-md px-3 py-1"
+              :class="filter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+              @click="filter = 'all'"
+            >
+              全部
+            </button>
+            <button
+              type="button"
+              class="rounded-md px-3 py-1"
+              :class="filter === 'invite' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+              @click="filter = 'invite'"
+            >
+              邀请码
+            </button>
+          </div>
+          <NuxtLink
+            to="/shop/my"
+            class="text-sm text-gray-500 hover:text-gray-900"
+          >我的订单</NuxtLink>
+        </div>
+      </div>
 
       <div
-        v-if="items.length"
+        v-if="filtered.length"
         class="grid gap-5 md:grid-cols-2 lg:grid-cols-3"
       >
         <NuxtLink
-          v-for="p in items"
+          v-for="p in filtered"
           :key="p.id"
           :to="`/shop/${p.id}`"
           class="group overflow-hidden rounded-xl border bg-white transition-shadow hover:shadow-md"
         >
           <div class="h-36 w-full overflow-hidden">
-            <img
-              v-if="p.image"
-              :src="p.image"
-              :alt="p.title"
-              class="h-full w-full object-cover"
+            <div
+              v-if="p.type === 'invite'"
+              class="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100 text-4xl"
             >
+              🎟
+            </div>
             <div
               v-else
-              class="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 text-3xl"
+              class="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 text-4xl"
             >
               🛍
             </div>
           </div>
           <div class="p-4">
-            <h2 class="font-semibold text-gray-900 group-hover:text-blue-600">
-              {{ p.title }}
-            </h2>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="p.type === 'invite'"
+                class="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700"
+              >邀请码</span>
+              <h2 class="truncate font-semibold text-gray-900 group-hover:text-blue-600">
+                {{ p.title }}
+              </h2>
+            </div>
             <p class="mt-1 line-clamp-2 text-sm text-gray-500">
               {{ p.description }}
             </p>
@@ -139,35 +152,7 @@ useHead({ title: '商城' })
         class="rounded-xl border bg-white p-16 text-center"
       >
         <p class="text-gray-400">
-          商店暂无在售商品
-        </p>
-      </div>
-
-      <div
-        v-if="gateways.length"
-        class="mt-8 rounded-xl border bg-white p-5 text-sm"
-      >
-        <h2 class="font-semibold text-gray-900">
-          支持的支付渠道
-        </h2>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <span
-            v-for="g in gateways"
-            :key="g"
-            class="rounded-md bg-gray-100 px-2.5 py-1 text-xs text-gray-600"
-          >{{ GATEWAY_LABELS[g] ?? g }}</span>
-        </div>
-        <p class="mt-3 text-xs text-gray-400">
-          还没有支付渠道账号？
-          <a
-            v-for="(link, g) in affLinks"
-            v-show="link"
-            :key="g"
-            :href="link"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="mr-3 text-blue-600 hover:underline"
-          >{{ GATEWAY_REGISTER[g] ?? g }} ↗</a>
+          暂无相关商品
         </p>
       </div>
     </template>

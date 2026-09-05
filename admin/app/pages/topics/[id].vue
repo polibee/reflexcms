@@ -9,6 +9,8 @@ interface Reply {
   floor: number
   like_count: number
   created_at: string
+  author_name?: string
+  author_signature?: string
 }
 
 interface TopicDetail {
@@ -22,6 +24,7 @@ interface TopicDetail {
   like_count: number
   view_count: number
   best_reply_id: number
+  can_moderate?: boolean
   replies: Reply[]
 }
 
@@ -187,6 +190,72 @@ async function blockUser(userId: number) {
     blockBusyId.value = 0
   }
 }
+
+/* ---------- moderator actions (board moderators / super-admin) ---------- */
+
+const modBusy = ref(false)
+
+async function moderate(action: string, replyId?: number) {
+  if (!topic.value || modBusy.value) return
+  modBusy.value = true
+  try {
+    await rawFetch(`/api/v1/topics/${route.params.id}/moderate`, {
+      method: 'POST',
+      body: { action, reply_id: replyId ?? 0 }
+    })
+    const fresh = await rawFetch(`/api/v1/topics/${route.params.id}`) as TopicDetail
+    fresh.replies = (fresh.replies ?? []).slice(0, repliesPerPage)
+    topic.value = fresh
+    replyTotal.value = fresh.reply_count
+  } catch (e: unknown) {
+    const err = e as { data?: { statusMessage?: string } }
+    notifyFront(err.data?.statusMessage ?? '操作失败')
+  } finally {
+    modBusy.value = false
+  }
+}
+
+function notifyFront(msg: string) {
+  // lightweight toast for moderator feedback
+  window.alert(msg)
+}
+
+/* mute / ban from the reply card (moderators mute; admins can also ban) */
+const muteBusyId = ref(0)
+
+async function muteUser(userId: number, days: number) {
+  if (muteBusyId.value) return
+  muteBusyId.value = userId
+  try {
+    const res = await rawFetch(`/api/v1/users/${userId}/mute`, {
+      method: 'POST',
+      body: { days }
+    }) as { message?: string }
+    notifyFront(res.message ?? '已禁言')
+  } catch (e: unknown) {
+    const err = e as { data?: { statusMessage?: string } }
+    notifyFront(err.data?.statusMessage ?? '操作失败')
+  } finally {
+    muteBusyId.value = 0
+  }
+}
+
+async function banUser(userId: number, days: number) {
+  if (muteBusyId.value) return
+  muteBusyId.value = userId
+  try {
+    const res = await rawFetch(`/api/v1/users/${userId}/ban`, {
+      method: 'POST',
+      body: { days }
+    }) as { message?: string }
+    notifyFront(res.message ?? '已封禁')
+  } catch (e: unknown) {
+    const err = e as { data?: { statusMessage?: string } }
+    notifyFront(err.data?.statusMessage ?? '操作失败')
+  } finally {
+    muteBusyId.value = 0
+  }
+}
 </script>
 
 <template>
@@ -231,6 +300,28 @@ async function blockUser(userId: number) {
             @click="toggleFavorite"
           >
             {{ favorited ? '★ 已收藏' : '☆ 收藏' }}
+          </button>
+        </div>
+
+        <!-- moderator action bar -->
+        <div
+          v-if="topic.can_moderate"
+          class="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-blue-50 px-3 py-2"
+        >
+          <span class="text-xs font-medium text-blue-700">版主操作：</span>
+          <button
+            v-for="act in [
+              { key: topic.is_pinned ? 'unpin' : 'pin', label: topic.is_pinned ? '取消置顶' : '置顶' },
+              { key: topic.is_featured ? 'unfeature' : 'feature', label: topic.is_featured ? '取消精华' : '精华' },
+              { key: topic.status === 'open' ? 'close' : 'open', label: topic.status === 'open' ? '关闭' : '重新开放' }
+            ]"
+            :key="act.key"
+            type="button"
+            :disabled="modBusy"
+            class="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+            @click="moderate(act.key)"
+          >
+            {{ act.label }}
           </button>
         </div>
         <div
@@ -287,6 +378,37 @@ async function blockUser(userId: number) {
                     >
                       ⛔
                     </button>
+                    <!-- moderator: set best reply / mute -->
+                    <button
+                      v-if="topic.can_moderate && reply.id !== topic.best_reply_id"
+                      type="button"
+                      title="设为最佳回复"
+                      class="text-xs text-gray-300 hover:text-green-600"
+                      :disabled="modBusy"
+                      @click="moderate('best_reply', reply.id)"
+                    >
+                      ⭐
+                    </button>
+                    <button
+                      v-if="topic.can_moderate && reply.user_id !== me?.id"
+                      type="button"
+                      title="禁言 3 天"
+                      class="text-xs text-gray-300 hover:text-orange-500"
+                      :disabled="muteBusyId === reply.user_id"
+                      @click="muteUser(reply.user_id, 3)"
+                    >
+                      🔇
+                    </button>
+                    <button
+                      v-if="me?.role === 'super-admin' && reply.user_id !== me.id"
+                      type="button"
+                      title="封禁 7 天（仅超级管理员）"
+                      class="text-xs text-gray-300 hover:text-red-600"
+                      :disabled="muteBusyId === reply.user_id"
+                      @click="banUser(reply.user_id, 7)"
+                    >
+                      ⛔️
+                    </button>
                   </div>
                   <span class="text-xs text-gray-400">#{{ reply.floor }}</span>
                 </div>
@@ -298,6 +420,12 @@ async function blockUser(userId: number) {
                   <time>{{ reply.created_at?.slice(0, 10) }}</time>
                   <span>👍 {{ reply.like_count }}</span>
                 </div>
+                <p
+                  v-if="reply.author_signature"
+                  class="mt-2 border-t border-dashed border-gray-100 pt-2 text-xs text-gray-400"
+                >
+                  <span v-html="renderMarkdown(reply.author_signature)" />
+                </p>
               </div>
             </div>
           </div>

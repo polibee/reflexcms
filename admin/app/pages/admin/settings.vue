@@ -10,6 +10,8 @@ interface FieldDef {
   type: 'text' | 'switch' | 'number' | 'textarea' | 'select'
   options?: Array<{ label: string, value: string }>
   helpText?: string
+  /** gateway register link key (admin onboards via affiliate URL) */
+  register?: keyof typeof GATEWAY_REGISTER
 }
 
 const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = [
@@ -103,20 +105,22 @@ const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = 
     fields: [
       { key: 'pay.shop_enabled', label: '启用商城', type: 'switch', helpText: '开启后前台显示商城模块与导航入口' },
       { key: 'pay.display_currency', label: '计价货币', type: 'text', helpText: 'ISO 代码，如 USD / CNY' },
-      { key: 'pay.xcash_enabled', label: 'Xcash 渠道', type: 'switch' },
+      { key: 'pay.xcash_enabled', label: 'Xcash 渠道', type: 'switch', register: 'xcash' },
       { key: 'pay.xcash_appid', label: 'Xcash AppID', type: 'text' },
       { key: 'pay.xcash_hmac_key', label: 'Xcash HMAC Key', type: 'text' },
       { key: 'pay.xcash_api', label: 'Xcash API 地址', type: 'text', helpText: '默认 https://pay.xca.sh' },
       { key: 'pay.aff_xcash', label: 'Xcash 注册推广链接', type: 'text' },
-      { key: 'pay.coinpayments_enabled', label: 'CoinPayments 渠道', type: 'switch' },
+      { key: 'pay.coinpayments_enabled', label: 'CoinPayments 渠道', type: 'switch', register: 'coinpayments' },
       { key: 'pay.coinpayments_client_id', label: 'CoinPayments Client ID', type: 'text' },
       { key: 'pay.coinpayments_client_secret', label: 'CoinPayments Client Secret', type: 'text' },
       { key: 'pay.aff_coinpayments', label: 'CoinPayments 注册推广链接', type: 'text' },
-      { key: 'pay.xunhu_enabled', label: '虎皮椒渠道', type: 'switch', helpText: '该渠道签名协议与安全策略冲突，暂不可用' },
+      { key: 'pay.nowpayments_enabled', label: 'NOWPayments 渠道', type: 'switch', register: 'nowpayments' },
+      { key: 'pay.nowpayments_api_key', label: 'NOWPayments API Key', type: 'text' },
+      { key: 'pay.xunhu_enabled', label: '虎皮椒渠道', type: 'switch', helpText: '该渠道签名协议与安全策略冲突，暂不可用', register: 'xunhupay' },
       { key: 'pay.aff_xunhupay', label: '虎皮椒注册推广链接', type: 'text' },
-      { key: 'pay.codepay_enabled', label: '码支付渠道', type: 'switch', helpText: '该渠道签名协议与安全策略冲突，暂不可用' },
+      { key: 'pay.codepay_enabled', label: '码支付渠道', type: 'switch', helpText: '该渠道签名协议与安全策略冲突，暂不可用', register: 'codepay' },
       { key: 'pay.aff_codepay', label: '码支付注册推广链接', type: 'text' },
-      { key: 'pay.paypal_enabled', label: 'PayPal 渠道', type: 'switch' },
+      { key: 'pay.paypal_enabled', label: 'PayPal 渠道', type: 'switch', register: 'paypal' },
       { key: 'pay.paypal_client_id', label: 'PayPal Client ID', type: 'text' },
       { key: 'pay.paypal_secret', label: 'PayPal Secret', type: 'text' },
       { key: 'pay.paypal_env', label: 'PayPal 环境', type: 'select', options: [
@@ -140,6 +144,17 @@ const GROUP_DEFS: Array<{ group: string, title: string, fields: FieldDef[] }> = 
 const settings = ref<Record<string, Record<string, any>>>({})
 const loading = ref(false)
 const saving = ref(false)
+
+/* Admin registers gateway accounts through the operator's affiliate links;
+ * end users never see these — they only pay. */
+const GATEWAY_REGISTER: Record<string, { label: string, url: string }> = {
+  xcash: { label: '注册 Xcash 账号 ↗', url: 'https://dash.xca.sh/register?ref=2GWV5MKT' },
+  nowpayments: { label: '注册 NOWPayments 账号 ↗', url: 'https://account.nowpayments.io/create-account?link_id=3940543227' },
+  coinpayments: { label: '注册 CoinPayments 账号 ↗', url: 'https://www.coinpayments.net/index.php?cmd=register' },
+  xunhupay: { label: '注册虎皮椒账号 ↗', url: 'https://www.xunhupay.com/registers.html' },
+  codepay: { label: '注册码支付账号 ↗', url: 'https://codepay.fateqq.com/reg.aspx' },
+  paypal: { label: '注册 PayPal 开发者账号 ↗', url: 'https://developer.paypal.com/dashboard/accounts' }
+}
 
 async function fetchAll() {
   loading.value = true
@@ -230,6 +245,13 @@ useHead({ title: '站点设置' })
                 >
                   {{ field.helpText }}
                 </p>
+                <a
+                  v-if="field.register"
+                  :href="GATEWAY_REGISTER[field.register].url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-1 inline-block text-xs text-blue-600 hover:underline"
+                >{{ GATEWAY_REGISTER[field.register].label }}</a>
               </div>
               <UiSwitch
                 :model-value="Boolean(getVal(group.group, field.key))"

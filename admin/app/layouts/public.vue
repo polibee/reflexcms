@@ -175,7 +175,9 @@ function navAllowed(url: string): boolean {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <!-- sticky-footer: flex column + flex-1 main keeps the footer pinned to
+       the viewport bottom on short pages, so async data never shifts it. -->
+  <div class="flex min-h-screen flex-col bg-gray-50">
     <header class="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <NuxtLink
@@ -193,7 +195,7 @@ function navAllowed(url: string): boolean {
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 py-8">
+    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
       <div class="flex gap-8">
         <div class="min-w-0 flex-1">
           <slot />
@@ -461,10 +463,11 @@ function navAllowed(url: string): boolean {
       </div>
     </main>
 
-    <footer class="border-t bg-white py-6 text-center text-xs text-gray-400">
+    <footer class="border-t bg-white py-4 text-center text-xs text-gray-400">
+      <!-- reserved height: nav renders async, so reserve a row to avoid
+           layout shift on load -->
       <nav
-        v-if="footerNav.length"
-        class="mb-3 flex flex-wrap items-center justify-center gap-5"
+        class="mb-2 flex min-h-5 flex-wrap items-center justify-center gap-5"
       >
         <NuxtLink
           v-for="m in footerNav"

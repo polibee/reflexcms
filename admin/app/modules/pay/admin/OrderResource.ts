@@ -8,6 +8,30 @@ export default defineResource({
   sort: 10,
   searchable: ['order_no', 'title'],
 
+  // Manual delivery confirmation for offline payments and re-delivery of
+  // missing invite codes (idempotent server-side).
+  rowActions: [
+    defineAction({
+      name: 'mark-paid',
+      label: '标记已支付',
+      icon: 'check-circle',
+      permission: 'orders.edit',
+      visible: record => record.status === 'pending',
+      confirm: {
+        title: '确认该订单已线下支付？将触发库存扣减与商品（邀请码）发放。',
+        confirmLabel: '标记已支付'
+      },
+      handler: async ({ record }) => {
+        await $fetch('/api/admin/order-mark-paid', {
+          method: 'POST',
+          body: { order_id: record!.id }
+        })
+        notify('订单已标记为已支付')
+        emitAdminEvent('orders:refresh')
+      }
+    })
+  ],
+
   table: () => [
     textColumn('id', 'ID', { sortable: true }),
     textColumn('order_no', '订单号', { sortable: true }),

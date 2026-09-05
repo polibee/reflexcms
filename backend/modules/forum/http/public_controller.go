@@ -146,7 +146,7 @@ func attachBoardNames(items []map[string]any) {
 }
 
 // attachUserNames resolves topic author and last-replier usernames in one
-// batched lookup, attaching author_name / last_replier_name to each row.
+// batched lookup, attaching author_name / last_replier_name / author_signature.
 func attachUserNames(items []map[string]any) {
 	ids := map[uint64]bool{}
 	for _, it := range items {
@@ -171,20 +171,28 @@ func attachUserNames(items []map[string]any) {
 	var users []map[string]any
 	if err := facades.Orm().Query().Table("users").
 		Where("id IN ("+strings.Join(placeholders, ", ")+")", args...).
-		Select("id", "username").
+		Select("id", "username", "signature").
 		Get(&users); err != nil {
 		return
 	}
 
 	names := map[uint64]string{}
+	sigs := map[uint64]string{}
 	for _, u := range users {
 		if id, ok := toUint64(u["id"]); ok {
 			names[id], _ = u["username"].(string)
+			sigs[id], _ = u["signature"].(string)
 		}
 	}
 	for _, it := range items {
-		if id, ok := toUint64(it["user_id"]); ok && names[id] != "" {
-			it["author_name"] = names[id]
+		if id, ok := toUint64(it["user_id"]); ok {
+			if name := names[id]; name != "" {
+				it["author_name"] = name
+			}
+			// attach signatures for reply-style rows (they render under cards)
+			if _, isReply := it["content"]; isReply {
+				it["author_signature"] = sigs[id]
+			}
 		}
 		if id, ok := toUint64(it["last_reply_user_id"]); ok && names[id] != "" {
 			it["last_replier_name"] = names[id]
@@ -293,12 +301,37 @@ func (r *PublicController) ShowTopic(ctx http.Context) http.Response {
 	result := topic[0]
 	result["replies"] = replies
 
+	// Frontend moderation affordances for board moderators / super-admin.
+	if identity, ok := authhttp.RequireIdentity(ctx); ok {
+		canModerate := identity.Role == "super-admin"
+		if !canModerate {
+			if boardID, ok := toUint64(result["forum_category_id"]); ok && IsModerator(boardID, identity.ID) {
+				canModerate = true
+			}
+		}
+		result["can_moderate"] = canModerate
+	}
+
 	return ctx.Response().Success().Json(result)
 }
 
 // topicThrottleWindow is the minimum interval between two topics from the
 // same user; a cheap spam brake on top of session auth.
 const topicThrottleWindow = 30 * time.Second
+
+// rejectedByMute checks the session user's mute window; returns a 403
+// response when silenced, nil otherwise.
+func rejectedByMute(ctx http.Context, userID uint64) *http.Response {
+	var until []any
+	_ = facades.Orm().Query().Table("users").
+		Where("id = ? AND muted_until IS NOT NULL AND muted_until > NOW()", userID).
+		Pluck("muted_until", &until)
+	if len(until) > 0 {
+		resp := httpx.Error(ctx, 403, "你已被禁言，暂时无法发言")
+		return &resp
+	}
+	return nil
+}
 
 // StoreTopic: POST /api/v1/topics — creates a new topic for the session
 // user. Identity comes from the bearer token; status defaults to open.
@@ -310,6 +343,9 @@ func (r *PublicController) StoreTopic(ctx http.Context) http.Response {
 	identity, ok := authhttp.RequireIdentity(ctx)
 	if !ok {
 		return httpx.Error(ctx, 401, "请先登录后再发帖")
+	}
+	if resp := rejectedByMute(ctx, identity.ID); resp != nil {
+		return *resp
 	}
 
 	var req struct {
@@ -442,6 +478,9 @@ func (r *PublicController) StoreReply(ctx http.Context) http.Response {
 	identity, ok := authhttp.RequireIdentity(ctx)
 	if !ok {
 		return httpx.Error(ctx, 401, "请先登录后再回复")
+	}
+	if resp := rejectedByMute(ctx, identity.ID); resp != nil {
+		return *resp
 	}
 
 	idStr := ctx.Request().Route("id")

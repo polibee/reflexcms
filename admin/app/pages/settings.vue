@@ -13,6 +13,7 @@ const rawFetch = $fetch as unknown as (url: string, opts?: Record<string, any>) 
 const username = ref('')
 const bio = ref('')
 const website = ref('')
+const signature = ref('')
 const email = ref('')
 const profileMsg = ref('')
 const profileErr = ref('')
@@ -20,11 +21,12 @@ const savingProfile = ref(false)
 
 async function loadProfile() {
   try {
-    const p = await rawFetch('/api/v1/me/profile') as { username: string, email: string, bio: string, website: string }
+    const p = await rawFetch('/api/v1/me/profile') as { username: string, email: string, bio: string, website: string, signature?: string }
     username.value = p.username ?? ''
     email.value = p.email ?? ''
     bio.value = p.bio ?? ''
     website.value = p.website ?? ''
+    signature.value = p.signature ?? ''
   } catch { /* silent */ }
 }
 
@@ -35,13 +37,13 @@ async function saveProfile() {
   try {
     const res = await rawFetch('/api/v1/me/profile', {
       method: 'PUT',
-      body: { username: username.value, bio: bio.value, website: website.value }
+      body: { username: username.value, bio: bio.value, website: website.value, signature: signature.value }
     }) as { message?: string }
     profileMsg.value = res.message ?? '资料已更新'
     void refreshAuth()
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string } }
-    profileErr.value = err.data?.message ?? '保存失败'
+    const err = e as { data?: { statusMessage?: string, message?: string } }
+    profileErr.value = err.data?.statusMessage ?? err.data?.message ?? '保存失败'
   } finally {
     savingProfile.value = false
   }
@@ -203,6 +205,25 @@ useHead({ title: '个人设置' })
               placeholder="https://example.com"
               class="h-9 w-full rounded-md border border-gray-200 px-3 text-sm focus:border-blue-400 focus:outline-none"
             >
+          </div>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm text-gray-600">回复签名</label>
+            <p class="mb-1 text-xs text-gray-400">
+              展示在你的每条回复卡片下方；支持 Markdown 文本与链接，不支持图片和脚本
+            </p>
+            <input
+              v-model="signature"
+              type="text"
+              maxlength="200"
+              placeholder="如：专注 Go 后端 · [我的博客](https://example.com)"
+              class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+            >
+            <p
+              v-if="signature"
+              class="mt-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500"
+            >
+              预览：<span v-html="renderMarkdown(signature)" />
+            </p>
           </div>
           <div class="flex items-center justify-between">
             <span

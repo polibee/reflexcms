@@ -4,10 +4,12 @@
 package pay
 
 import (
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	nethttp "net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,7 +67,7 @@ func registerAdminSpecs() {
 		Model:            paymodels.Product{},
 		Searchable:       []string{"title"},
 		Sortable:         []string{"id", "title", "price_cents", "stock", "sort", "created_at"},
-		Fillable:         []string{"title", "description", "price_cents", "currency", "stock", "grant_points", "image", "is_active", "sort"},
+		Fillable:         []string{"title", "description", "price_cents", "currency", "stock", "grant_points", "image", "is_active", "sort", "type"},
 		PermissionPrefix: "products",
 	})
 
@@ -105,14 +107,17 @@ func registerPublicRoutes() {
 		})
 	})
 
-	// Create an order (session auth) → returns the gateway pay URL.
+	// Create an order — GUESTS ALLOWED. Identity is optional; an anonymous
+	// buyer is tracked by the unguessable order_no which the frontend keeps
+	// in sessionStorage, so the invite code stays retrievable after payment.
 	r.Post("/api/v1/orders", func(ctx http.Context) http.Response {
 		if !shopEnabled() {
 			return httpx.Error(ctx, 404, "Not Found")
 		}
-		identity, ok := authhttp.RequireIdentity(ctx)
-		if !ok {
-			return httpx.Error(ctx, 401, "请先登录后再购买")
+		// optional identity
+		userID := uint64(0)
+		if identity, ok := authhttp.RequireIdentity(ctx); ok {
+			userID = identity.ID
 		}
 
 		var req struct {
@@ -146,7 +151,7 @@ func registerPublicRoutes() {
 		if _, err := facades.Orm().Query().Exec(`
 			INSERT INTO orders (order_no, user_id, product_id, title, amount_cents, currency, gateway, status, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
-		`, orderNo, identity.ID, req.ProductID, fmt.Sprint(p["title"]), amountCents, currency, gw.Name()); err != nil {
+		`, orderNo, userID, req.ProductID, fmt.Sprint(p["title"]), amountCents, currency, gw.Name()); err != nil {
 			return httpx.Error(ctx, 500, err.Error())
 		}
 
@@ -180,20 +185,39 @@ func registerPublicRoutes() {
 		})
 	})
 
-	// Buyer-facing order status (owner only).
+	// Order status — PUBLIC by order number (unguessable; guests rely on it
+	// to retrieve purchased invite codes). Sensitive fields are not exposed.
 	r.Get("/api/v1/orders/{order_no}", func(ctx http.Context) http.Response {
-		identity, ok := authhttp.RequireIdentity(ctx)
-		if !ok {
-			return httpx.Error(ctx, 401, "请先登录")
-		}
+		orderNo := ctx.Request().Route("order_no")
 		var rows []map[string]any
 		if err := facades.Orm().Query().Table("orders").
-			Where("order_no = ? AND user_id = ?", ctx.Request().Route("order_no"), identity.ID).
-			Select("order_no", "title", "amount_cents", "currency", "gateway", "status", "paid_at", "created_at").
+			Where("order_no = ?", orderNo).
+			Select("order_no", "title", "amount_cents", "currency", "gateway", "status", "paid_at", "granted_code", "created_at").
 			Get(&rows); err != nil || len(rows) == 0 {
 			return httpx.Error(ctx, 404, "order not found")
 		}
 		return ctx.Response().Success().Json(rows[0])
+	})
+
+	// Admin: manually mark an order paid (offline payments / support).
+	r.Post("/api/admin/orders/{id}/mark-paid", func(ctx http.Context) http.Response {
+		if resp := adminhubCheckPermission(ctx, "orders.edit"); resp != nil {
+			return *resp
+		}
+		idStr := ctx.Request().Route("id")
+		id, parseErr := strconv.ParseUint(idStr, 10, 64)
+		if parseErr != nil || id == 0 {
+			return httpx.Error(ctx, 404, "order not found")
+		}
+		var nos []string
+		if err := facades.Orm().Query().Table("orders").
+			Where("id = ?", id).Pluck("order_no", &nos); err != nil || len(nos) == 0 {
+			return httpx.Error(ctx, 404, "order not found")
+		}
+		if err := markOrderPaid(nos[0]); err != nil {
+			return httpx.Error(ctx, 500, err.Error())
+		}
+		return ctx.Response().Success().Json(http.Json{"message": "已标记为已支付并发放商品"})
 	})
 
 	// Webhook dispatcher: one endpoint per gateway.
@@ -335,27 +359,64 @@ func toI64(v any) int64 {
 	return 0
 }
 
-// markOrderPaid flips a pending order to paid once, decrements stock and
-// grants the product's configured points.
+// markOrderPaid flips a pending order to paid, decrements stock and grants
+// configured points. Idempotent: safe to call again (e.g. manual re-mark)
+// to deliver a still-missing invite code.
 func markOrderPaid(orderNo string) error {
 	var rows []map[string]any
 	if err := facades.Orm().Query().Table("orders").
-		Where("order_no = ? AND status = 'pending'", orderNo).
+		Where("order_no = ?", orderNo).
 		Get(&rows); err != nil || len(rows) == 0 {
-		return nil // already processed or unknown
+		return nil // unknown order
 	}
 	order := rows[0]
 
-	if _, err := facades.Orm().Query().Exec(`
-		UPDATE orders SET status = 'paid', paid_at = NOW(), updated_at = NOW()
-		WHERE order_no = ? AND status = 'pending'
-	`, orderNo); err != nil {
-		return err
+	status := fmt.Sprint(order["status"])
+	if status == "pending" {
+		if _, err := facades.Orm().Query().Exec(`
+			UPDATE orders SET status = 'paid', paid_at = NOW(), updated_at = NOW()
+			WHERE order_no = ? AND status = 'pending'
+		`, orderNo); err != nil {
+			return err
+		}
+		order["status"] = "paid"
 	}
 
 	productID := toI64(order["product_id"])
 	userID := toI64(order["user_id"])
-	if productID > 0 {
+	if productID == 0 {
+		return nil
+	}
+
+	var prods []map[string]any
+	if err := facades.Orm().Query().Table("products").
+		Where("id = ?", productID).
+		Select("grant_points", "type").
+		Get(&prods); err != nil || len(prods) == 0 {
+		return nil
+	}
+
+	// Invite-code goods: mint + attach a code when the order has none.
+	// granted_code may be SQL NULL (scanned as nil), so assert the string
+	// type instead of Sprint — Sprint(nil) is "<nil>", never "".
+	granted, _ := order["granted_code"].(string)
+	if fmt.Sprint(prods[0]["type"]) == "invite" && granted == "" {
+		code := generateInviteCode()
+		if _, err := facades.Orm().Query().Exec(`
+			INSERT INTO invite_codes (code, creator_id, max_uses, used_count, created_at, updated_at)
+			VALUES (?, ?, 1, 0, NOW(), NOW())
+		`, code, userID); err != nil {
+			return err
+		}
+		if _, err := facades.Orm().Query().Table("orders").
+			Where("order_no = ?", orderNo).
+			Update(map[string]any{"granted_code": code}); err != nil {
+			return err
+		}
+	}
+
+	// stock decrement only once (guarded by pending→paid transition)
+	if status == "pending" {
 		if _, err := facades.Orm().Query().Exec(`
 			UPDATE products SET stock = GREATEST(stock - 1, 0), updated_at = NOW()
 			WHERE id = ? AND stock > 0
@@ -371,6 +432,20 @@ func markOrderPaid(orderNo string) error {
 		}
 	}
 	return nil
+}
+
+// generateInviteCode mints an unambiguous invite code (same alphabet as
+// the layout module's auto-generate).
+func generateInviteCode() string {
+	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	buf := make([]byte, 10)
+	if _, err := crand.Read(buf); err != nil {
+		return fmt.Sprintf("INV-%d", time.Now().UnixNano())
+	}
+	for i := range buf {
+		buf[i] = alphabet[int(buf[i])%len(alphabet)]
+	}
+	return "INV-" + string(buf)
 }
 
 // ---- board moderator helpers (used by forum v1 moderation) ----
