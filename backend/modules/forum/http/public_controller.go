@@ -410,6 +410,9 @@ func (r *PublicController) StoreTopic(ctx http.Context) http.Response {
 	_, _ = settingsservices.AwardDaily(identity.ID, settingsservices.PointReasonTopic,
 		settingsservices.EarnTopic(), settingsservices.TopicDailyCap())
 
+	// Fan out @mentions in the topic body (same surface as replies).
+	notificationservices.NotifyMentions(identity.ID, identity.Name, content, "topic", uint64(ids[0]), content)
+
 	return ctx.Response().Success().Json(http.Json{
 		"id":      ids[0],
 		"message": "发布成功",
