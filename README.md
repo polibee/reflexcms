@@ -57,7 +57,41 @@ cd reflexcms
 
 > **生产环境管理员账号**：部署脚本会在全新安装时运行 `artisan admin:bootstrap`，自动生成强随机密码并**只打印一次**，请立即保存。也可手动执行（在 `backend/` 目录）`go run . artisan admin:bootstrap --email=you@example.com`（省略 `--password` 则自动生成）。空站点上首次注册的账号同样会被授予超级管理员。管理员可在后台「个人设置」中随时修改密码。开发环境默认账号仍为 `admin@reflexcms.dev` / `ReflexCMS@2026`，上线前务必重置。
 
-手动部署与生产环境配置见 [`docs/运维部署手册.md`](docs/运维部署手册.md)。
+## 🛠 手动部署
+
+不使用一键脚本时，按以下步骤逐项执行（完整细节与排错见 [`docs/运维部署手册.md`](docs/运维部署手册.md)）。
+
+**1. 环境要求**：Go ≥ 1.25、Node.js ≥ 20、PostgreSQL ≥ 15（推荐 17）、Redis ≥ 6。
+
+**2. 创建数据库**：
+
+```sql
+CREATE USER reflexcms WITH PASSWORD '你的强密码';
+CREATE DATABASE reflexcms OWNER reflexcms;
+```
+
+**3. 后端**（默认监听 `:9000`）：
+
+```bash
+cd backend
+cp .env.example .env                  # 编辑 DB_* / APP_KEY / APP_ENV=production
+go build -o reflexcms-api .
+./reflexcms-api artisan migrate       # 数据库迁移
+./reflexcms-api artisan db:seed       # 仅首次：角色等基础数据
+./reflexcms-api artisan admin:bootstrap   # 生成超管账号，密码只打印一次
+./reflexcms-api                       # 启动（生产建议 systemd 托管）
+```
+
+**4. 前端**（Nuxt 同构服务，含管理后台与公共前台，默认 `:3000`）：
+
+```bash
+cd admin
+echo "NUXT_PUBLIC_API_BASE=http://127.0.0.1:9000" > .env
+npm ci && npm run build
+BACKEND_URL=http://127.0.0.1:9000 node .output/server/index.mjs
+```
+
+**5. 常驻与反代**：后端用 systemd（`Restart=always`）或 NSSM（Windows）托管；Caddy/Nginx 反代并终结 TLS，`SESSION_SECURE=true`、admin 以 production 构建开启 Cookie Secure。
 
 ---
 

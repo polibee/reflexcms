@@ -57,7 +57,43 @@ The script handles everything: environment checks → Docker (PostgreSQL 17 + Re
 
 > **Production admin account**: on a fresh install the deploy script runs `artisan admin:bootstrap`, which generates a strong random password and prints it **exactly once** — store it immediately. You can also run it manually (from `backend/`): `go run . artisan admin:bootstrap --email=you@example.com` (omit `--password` to auto-generate). The first account registered on an empty site also becomes the super-admin. Admins can change the password anytime under Settings → personal profile. The dev default `admin@reflexcms.dev` / `ReflexCMS@2026` must be reset before going live.
 
-For manual / production deployment, see [`docs/运维部署手册.md`](docs/运维部署手册.md).
+## 🛠 Manual Deployment
+
+To deploy without the one-click script, follow these steps (full details and troubleshooting in [`docs/运维部署手册.md`](docs/运维部署手册.md)).
+
+**1. Requirements**: Go ≥ 1.25, Node.js ≥ 20, PostgreSQL ≥ 15 (17 recommended), Redis ≥ 6.
+
+**2. Create the database**:
+
+```sql
+CREATE USER reflexcms WITH PASSWORD 'your-strong-password';
+CREATE DATABASE reflexcms OWNER reflexcms;
+```
+
+**3. Backend** (listens on `:9000` by default):
+
+```bash
+cd backend
+cp .env.example .env                  # edit DB_* / APP_KEY / APP_ENV=production
+go build -o reflexcms-api .
+./reflexcms-api artisan migrate       # run migrations
+./reflexcms-api artisan db:seed       # first time only: roles & base data
+./reflexcms-api artisan admin:bootstrap   # create super-admin; password printed once
+./reflexcms-api                       # start (use systemd in production)
+```
+
+**4. Frontend** (Nuxt server app hosting both the admin panel and the public site, default `:3000`):
+
+```bash
+cd admin
+echo "NUXT_PUBLIC_API_BASE=http://127.0.0.1:9000" > .env
+npm ci && npm run build
+BACKEND_URL=http://127.0.0.1:9000 node .output/server/index.mjs
+```
+
+**5. Process management & reverse proxy**: host the backend under systemd (`Restart=always`) or NSSM (Windows); terminate TLS at Caddy/Nginx and set `SESSION_SECURE=true` plus a production build of admin to enable Secure cookies.
+
+For manual / production deployment, see the **Manual Deployment** section above and [`docs/运维部署手册.md`](docs/运维部署手册.md).
 
 ---
 
