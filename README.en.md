@@ -96,9 +96,14 @@ For manual / production deployment, see [`docs/运维部署手册.md`](docs/运�
 <a id="vast-ai"></a>
 ## ☁️ Need GPU Compute?
 
-[![Vast.ai](docs/images/vast-ai.ico)](https://cloud.vast.ai/?ref_id=91181)
+[![Vast.ai](docs/images/vast-logo.svg)](https://cloud.vast.ai/?ref_id=91181)
 
 **[Vast.ai — cost-effective GPU cloud rental](https://cloud.vast.ai/?ref_id=91181)**: if you need GPUs for AI summarization, content moderation, or model hosting, try [Vast.ai](https://cloud.vast.ai/?ref_id=91181) — per-second billing, a huge community GPU marketplace, at a fraction of mainstream cloud pricing.
+
+- **The world's largest GPU marketplace**: 20,000+ rentable GPUs across 40+ data centers, from RTX 4090 to A100 / H100
+- **Per-second billing, stop anytime**: prices are set by real-time supply and demand — usually a fraction of what hyperscalers charge; a few dollars gets you started
+- **Deploy in minutes**: pick a PyTorch / TensorFlow image, launch an instance, connect via SSH or Jupyter
+- **Flexible form factors**: single-GPU instances, large elastic clusters, and Serverless inference endpoints
 
 ## 📄 License
 

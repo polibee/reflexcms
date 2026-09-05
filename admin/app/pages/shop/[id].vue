@@ -23,6 +23,7 @@ const rawFetch = $fetch as unknown as (url: string, opts?: Record<string, unknow
 
 const product = ref<ShopProduct | null>(null)
 const gateways = ref<string[]>([])
+const affLinks = ref<Record<string, string>>({})
 const loading = ref(true)
 
 const gateway = ref('')
@@ -80,9 +81,10 @@ onMounted(async () => {
   try {
     // /api/v1/products only exposes active in-stock goods; detail falls
     // back gracefully for off-shelf items already on screen.
-    const res = await rawFetch('/api/v1/products') as { items: ShopProduct[], gateways: string[] }
+    const res = await rawFetch('/api/v1/products') as { items: ShopProduct[], gateways: string[], aff_links: Record<string, string> }
     product.value = (res.items ?? []).find(p => String(p.id) === String(route.params.id)) ?? null
     gateways.value = res.gateways ?? []
+    affLinks.value = res.aff_links ?? {}
     if (gateways.value.length && !gateway.value) gateway.value = gateways.value[0]
   } catch { /* silent */ }
   loading.value = false
@@ -148,7 +150,7 @@ useHead(() => ({ title: product.value ? `${product.value.title} · 商品详情`
           <label
             v-for="g in gateways"
             :key="g"
-            class="flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm hover:bg-gray-50"
+            class="relative flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm hover:bg-gray-50"
             :class="gateway === g ? 'border-blue-500 ring-1 ring-blue-400' : 'border-gray-200'"
           >
             <input
@@ -159,6 +161,16 @@ useHead(() => ({ title: product.value ? `${product.value.title} · 商品详情`
               class="accent-blue-600"
             >
             {{ GATEWAY_LABELS[g] ?? g }}
+            <!-- partner referral badge (bottom-right, admin-configured link) -->
+            <a
+              v-if="affLinks[g]"
+              :href="affLinks[g]"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="获取该渠道账号"
+              class="absolute right-2 bottom-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-400 hover:bg-blue-50 hover:text-blue-600"
+              @click.stop
+            >注册 ↗</a>
           </label>
         </div>
 

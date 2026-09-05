@@ -105,9 +105,14 @@ cd reflexcms
 <a id="vast-ai"></a>
 ## ☁️ 需要 GPU 算力？
 
-[![Vast.ai](docs/images/vast-ai.ico)](https://cloud.vast.ai/?ref_id=91181)
+[![Vast.ai](docs/images/vast-logo.svg)](https://cloud.vast.ai/?ref_id=91181)
 
 **[Vast.ai — 高性价比 GPU 云租用](https://cloud.vast.ai/?ref_id=91181)**：如果你需要为 AI 摘要、内容审核等模块准备 GPU 算力，推荐试试 [Vast.ai](https://cloud.vast.ai/?ref_id=91181)——按时计费、海量社区 GPU、价格仅为主流云的零头。
+
+- **全球最大 GPU 共享市场**：20,000+ 可租 GPU、40+ 数据中心，覆盖 RTX 4090 / A100 / H100 等主流卡型
+- **按秒计费，随用随停**：价格由供需实时决定，通常只有传统云厂商的几分之一；充几美元就能开跑
+- **分钟级部署**：选择 PyTorch / TensorFlow 等镜像，一键启动实例，SSH / Jupyter 直连
+- **多种租用形态**：单卡实例、大规模弹性集群、Serverless 推理端点，按需选择
 
 ## 📄 License
 

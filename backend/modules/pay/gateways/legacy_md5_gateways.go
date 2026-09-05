@@ -156,7 +156,7 @@ func formValuesFrom(params map[string]string) url.Values {
 type XunhuGateway struct{}
 
 func (XunhuGateway) Name() string  { return "xunhupay" }
-func (XunhuGateway) Enabled() bool { return true }
+func (XunhuGateway) Enabled() bool { return payBool("pay.xunhu_enabled") }
 
 func (XunhuGateway) Create(req CreateRequest) (CreateResult, error) {
 	appid := paySet("pay.xunhu_appid", "")
@@ -211,7 +211,7 @@ func init() { Register(XunhuGateway{}) }
 type CodePayGateway struct{}
 
 func (CodePayGateway) Name() string  { return "codepay" }
-func (CodePayGateway) Enabled() bool { return true }
+func (CodePayGateway) Enabled() bool { return payBool("pay.codepay_enabled") }
 
 func (CodePayGateway) Create(req CreateRequest) (CreateResult, error) {
 	id := paySet("pay.codepay_id", "")

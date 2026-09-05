@@ -98,6 +98,9 @@ function wrapSel(before: string, after = before) {
 
 const isRichtext = computed(() => props.node.kind === 'richtext')
 
+/* Tiptap rich text for the article module */
+const TiptapEditor = resolveComponent('TiptapEditor')
+
 /* ---------- wysiwyg: contenteditable rich text (dependency-free) ---------- */
 const wysiwygRef = ref<HTMLElement>()
 const wysiwygHtml = computed<string>({
@@ -236,6 +239,15 @@ function onWysiwygInput(e: Event) {
         class="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring [&_blockquote]:border-l-4 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
         @input="onWysiwygInput"
         @blur="wysiwygHtml = ($event.target as HTMLElement).innerHTML"
+      />
+    </template>
+
+    <!-- Tiptap rich text editor (article module) -->
+    <template v-else-if="node.kind === 'tiptap'">
+      <TiptapEditor
+        v-model="stringValue"
+        :placeholder="node.placeholder"
+        :disabled="node.disabled"
       />
     </template>
 

@@ -26,9 +26,10 @@ func paySet(key, fallback string) string {
 	return v
 }
 
+// payBool tolerates the value shapes the settings store can return
+// (JSON true/false strings, "1", or a raw bool).
 func payBool(key string) bool {
-	v := settingsservices.Get(key)
-	return v == "true" || v == "1"
+	return settingsservices.GetBoolSetting(key)
 }
 
 // ---- Xcash (docs/xcash.md): HMAC-SHA256 hex over nonce+timestamp+body ----

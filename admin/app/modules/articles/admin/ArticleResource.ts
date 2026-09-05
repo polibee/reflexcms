@@ -141,7 +141,7 @@ export default defineResource({
         placeholder: 'Leave empty to generate from the title',
         colSpan: 2
       }),
-      richtext('content', 'Content (Markdown)', { colSpan: 2 }),
+      tiptap('content', '内容（富文本）', { colSpan: 2, placeholder: '开始编写文章…' }),
       textarea('summary', 'Summary', { rows: 3, colSpan: 2 }),
       textarea('tags', 'Tags', {
         rows: 2,

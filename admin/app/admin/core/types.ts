@@ -16,6 +16,7 @@ export type FieldType
     | 'number'
     | 'textarea'
     | 'richtext'
+    | 'tiptap'
     | 'wysiwyg'
     | 'select'
     | 'switch'

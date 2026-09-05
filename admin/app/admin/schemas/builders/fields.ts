@@ -96,3 +96,8 @@ export function richtext(name: string, label: string, opts?: FieldOptions): Fiel
 export function wysiwyg(name: string, label: string, opts?: FieldOptions): FieldNode {
   return make('wysiwyg', name, label, opts)
 }
+
+/** Tiptap rich text editor; stores HTML. Used by the article module. */
+export function tiptap(name: string, label: string, opts?: FieldOptions): FieldNode {
+  return make('tiptap', name, label, opts)
+}
